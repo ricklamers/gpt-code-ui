@@ -22,7 +22,7 @@ export default function Sidebar(props: {
             <AssistantIcon /> GPT-Code
 
             <div className='github'>
-                <a href='https://github.com/ricklamers/gpt-code'>Open Source - {import.meta.env.VITE_APP_VERSION}</a>
+                <a href='https://github.com/ricklamers/gpt-code'>Open Source - v{import.meta.env.VITE_APP_VERSION}</a>
             </div>
         </div>
         <div className="settings">

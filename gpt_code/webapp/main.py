@@ -4,15 +4,20 @@ import requests
 import json
 import asyncio
 import re
+import logging
+import sys
 
 from collections import deque
 
 from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory
+from dotenv import load_dotenv
+
+load_dotenv('.env')
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 UPLOAD_FOLDER = 'workspace/'
-
+APP_PORT = 8080
 
 class LimitedLengthString:
     def __init__(self, maxlen=2000):
@@ -82,10 +87,16 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         return text
 
     if response.status_code != 200:
-        return "Error: " + response.text
+        return "Error: " + response.text, 500
 
-    return extract_code(response.json()["choices"][0]["message"]["content"])
+    return extract_code(response.json()["choices"][0]["message"]["content"]), 200
 
+# We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+cli = sys.modules['flask.cli']
+cli.show_server_banner = lambda *x: None
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -98,9 +109,10 @@ def index():
     return send_from_directory('static', 'index.html')
 
 
-@app.route('/static/<path:path>')
+@app.route('/assets/<path:path>')
 def serve_static(path):
-    return send_from_directory('static', path)
+    return send_from_directory('static/assets/', path)
+
 
 @app.route('/download')
 def download_file():
@@ -132,14 +144,14 @@ def generate_code():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    code = loop.run_until_complete(
+    code, status = loop.run_until_complete(
         get_code(user_prompt, user_openai_key, model))
     loop.close()
 
     # Append all messages to the message buffer for later use
     message_buffer.append(user_prompt + "\n\n")
 
-    return jsonify({'code': code})
+    return jsonify({'code': code}), status
 
 
 @app.route('/upload', methods=['POST'])
@@ -160,4 +172,4 @@ def upload_file():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080, use_reloader=False)
+    app.run(port=APP_PORT, debug=True, use_reloader=False)

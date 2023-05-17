@@ -6,21 +6,26 @@
 import sys
 import logging
 import asyncio
+import time
+import webbrowser
+
 from multiprocessing import Process
 
-from gpt_code.webapp.main import app
-from gpt_code.kernel_program.main import main, cleanup_kernel_program
+from gpt_code.webapp.main import app, APP_PORT
+from gpt_code.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
+
+APP_URL = "http://localhost:%s" % APP_PORT
 
 def run_webapp():
     try:
-        app.run(debug=True, port=8080, use_reloader=False)
+        app.run(port=APP_PORT, use_reloader=False)
     except Exception as e:
         logging.exception("Error running the webapp:")
         sys.exit(1)
 
 def run_kernel_program():
     try:
-        asyncio.run(main())
+        asyncio.run(kernel_program_main())
     except Exception as e:
         logging.exception("Error running the kernel_program:")
         sys.exit(1)
@@ -33,7 +38,29 @@ def setup_logging():
     file_handler.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(file_handler)
 
-if __name__ == "__main__":
+def print_gray(text):
+    gray_code = "\033[38;5;242m"
+    reset_code = "\033[0m"
+    print(f"{gray_code}{text}{reset_code}")
+
+
+def print_banner():
+        
+        print("""
+█▀▀ █▀█ ▀█▀ ▄▄ █▀▀ █▀█ █▀▄ █▀▀
+█▄█ █▀▀ ░█░ ░░ █▄▄ █▄█ █▄▀ ██▄
+        """)
+
+        print("> Open GPT-Code in your browser %s" % APP_URL)
+        print("")
+        print("You can inspect detailed logs in app.log.")
+        print("")
+        print_gray("Like GPT-Code? Check out https://ricklamers.io.")
+        print_gray("I'm looking for exciting MLE opportunities!")
+        print_gray("")
+        print_gray("Contribute to the project at https://github.com/ricklamers/gpt-code")   
+
+def main():
     setup_logging()
 
     webapp_process = Process(target=run_webapp)
@@ -43,8 +70,22 @@ if __name__ == "__main__":
         webapp_process.start()
         kernel_program_process.start()
 
+        # Poll until the webapp is running
+        while True:
+            try:
+                app.test_client().get("/")
+                break
+            except:
+                time.sleep(0.1)
+        
+        print_banner()    
+        
+        webbrowser.open(APP_URL)
+
         webapp_process.join()
         kernel_program_process.join()
+
+        
     except KeyboardInterrupt:
         print("Terminating processes...")
         

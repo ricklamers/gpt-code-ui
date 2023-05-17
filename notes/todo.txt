@@ -11,3 +11,4 @@
 Nice-to-haves
 - GitHub action for PyPI publish on release
 - Dark mode
+- Support image outputs

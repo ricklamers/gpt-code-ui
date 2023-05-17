@@ -1,0 +1,55 @@
+textarea {
+    padding: 0.9rem 1rem;
+    border: none;
+    font-size: 1rem;
+    border-radius: .375rem;
+    flex: 1;
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1.5rem;
+    resize: none;
+}
+
+textarea:focus {
+    outline: none
+}
+
+form.file-upload button, button.send {
+    border: 0;
+    background: #eee;
+    margin: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    height: fit-content;
+}
+
+form.file-upload button {
+    margin-right: 0;
+}
+
+form.file-upload svg, button.send svg {
+    margin-top: 3px;
+    width: 20px;
+    height: auto;
+}
+
+.input-parent {
+  padding: 1rem;
+}
+
+svg {
+    color: #000;
+}
+
+.input-holder {
+    display: flex;
+    justify-items: center;
+    box-shadow: 0 0 10px rgba(0,0,0,.1);
+    border: rgba(0,0,0,.1) 1px solid;
+    border-radius: .375rem;
+}
+
+.input-holder.focused {
+    border: rgba(0,0,0,.3) 1px solid;
+}

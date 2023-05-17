@@ -1,0 +1,63 @@
+div.message.system {
+    background: rgba(247,247,248);
+}
+
+div.avatar {
+    background: rgb(194, 142, 210);
+    padding: 5px;
+    color: #fff;
+    border-radius: 2px;
+}
+
+div.avatar svg {
+    display: block;
+    color: #fff;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+div.message.system div.avatar {
+    background: #74a89b;
+}
+
+div.message {
+    padding: 1rem;
+    border-bottom: rgba(0,0,0,.1);
+    flex-direction: row;
+    width: 100%;
+    display: flex;
+}
+
+div.message a:hover {
+    color: #000;
+    text-decoration: underline;
+}
+
+div.message-body {
+    padding-left: 1rem;
+    width: 100%;
+}
+
+.loader {
+    border: 5px solid #74a89b;
+    border-radius: 50%;
+    border-top: 5px solid #457e70;
+    width: 20px;
+    height: 20px;
+    -webkit-animation: spin 2s linear infinite; /* Safari */
+    animation: spin 2s linear infinite;
+    margin: 0 0.5rem;
+    margin-bottom: -5px;
+    display: inline-block;
+}
+
+/* Define spin animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+

@@ -1,0 +1,2 @@
+- Show trick of install_requires with pip output
+- Explain prompt injection trick for file upload

@@ -1,5 +1,4 @@
 import os
-import atexit
 import subprocess
 import sys
 import pathlib
@@ -99,6 +98,14 @@ def handle_request():
             config.IDENT_KERNEL_MANAGER
         )
         return jsonify({"result": "success"})
+    
+@app.route("/restart", methods=["POST"])
+def handle_restart():
+
+    cleanup_kernel_program()
+    start_kernel_manager()
+
+    return jsonify({"result": "success"})
 
 
 async def main():

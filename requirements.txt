@@ -1,6 +1,0 @@
-ipykernel
-snakemq
-openai
-requests
-Flask
-flask-cors

@@ -114,14 +114,18 @@ function App() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
+      
 
       const data = await response.json();
       const code = data.code;
 
       addMessage({ text: code, kind: "code", role: "system" });
+
+      if (response.status != 200) {
+        setWaitingForSystem(WaitingStates.Idle);
+        return;
+      }
+      
       submitCode(code);
       setWaitingForSystem(WaitingStates.RunningCode);
     } catch (error) {
@@ -133,6 +137,10 @@ function App() {
   };
 
   async function getApiData() {
+    if(document.hidden){
+      return;
+    }
+    
     let response = await fetch(`${Config.API_ADDRESS}/api`);
     let data = await response.json();
     data.results.forEach(function (result: string) {

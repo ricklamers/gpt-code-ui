@@ -1,7 +1,15 @@
 .PHONY: all compile_frontend bundle_pypi upload_pypi
 
-all: compile_frontend bundle_pypi upload_pypi
+# Extract version from setup.py file
+VERSION := $(shell sed -n "s/^.*version='\([^']*\)'.*$$/\1/p" setup.py)
 
+all: build upload_pypi
+
+build: compile_frontend bundle_pypi
+
+setenv:
+    export VITE_APP_VERSION=${VERSION}
+	
 compile_frontend:
 	cd frontend && \
 	npm install && \

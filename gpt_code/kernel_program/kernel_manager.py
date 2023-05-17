@@ -71,9 +71,7 @@ def start_snakemq(kc):
 
     def on_recv(conn, ident, message):
         if ident == config.IDENT_MAIN:
-            print("Received message from main")
             message = json.loads(message.data.decode("utf-8"))
-            print("Message: %s" % message)
 
             if message["type"] == "execute":
                 logger.debug("Executing command: %s" % message["value"])
@@ -87,9 +85,18 @@ def start_snakemq(kc):
 
     # Send alive
     utils.send_json(messaging, {"type": "status", "value": "ready"}, config.IDENT_MAIN)
+    logger.info("Python kernel ready to receive messages!")
 
     logger.info("Starting snakemq loop")
-    link.loop()
+
+    try:
+        link.loop()
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt received, exiting...")
+        sys.exit(0)
+    except Exception as e:
+        logger.error("Error in snakemq loop: %s" % e)
+        sys.exit(1)
 
 
 def start_flusher(kc):
@@ -208,7 +215,4 @@ def start_kernel():
 
 if __name__ == "__main__":
     kc = start_kernel()
-
-    print("started_kernel, connecting to snakemq")
-
     start_snakemq(kc)

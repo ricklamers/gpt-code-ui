@@ -3,6 +3,7 @@ import subprocess
 import sys
 import pathlib
 import json
+import logging
 
 import asyncio
 import json
@@ -18,6 +19,8 @@ import gpt_code.kernel_program.kernel_manager as kernel_manager
 import gpt_code.kernel_program.config as config
 import gpt_code.kernel_program.utils as utils
 
+APP_PORT = 5000
+
 # Get global logger
 logger = config.get_logger()
 
@@ -29,12 +32,18 @@ result_queue = Queue()
 
 messaging = None
 
+# We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
+cli = sys.modules['flask.cli']
+cli.show_server_banner = lambda *x: None
+
 app = Flask(__name__)
 CORS(app)
 
 def start_kernel_manager():
     global kernel_manager_process
-    print("start_kernel_manager")
 
     kernel_manager_script_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "kernel_manager.py"
@@ -52,11 +61,9 @@ def cleanup_kernel_program():
     kernel_manager.cleanup_spawned_processes()
 
 async def start_snakemq():
-    print("start_snakemq")
     global messaging
 
     messaging, link = utils.init_snakemq(config.IDENT_MAIN)
-    print("init_snakemq done: %s" % messaging)
 
     def on_recv(conn, ident, message):
         message = json.loads(message.data.decode("utf-8"))
@@ -120,7 +127,7 @@ async def main():
 
 
 def run_flask_app():
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=APP_PORT)
 
 if __name__ == "__main__":
     asyncio.run(main())

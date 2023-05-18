@@ -5,7 +5,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 0.5rem;
+    padding: 0.75rem;
     color: #fff;
 }
 
@@ -53,6 +53,7 @@ select option {
 button {
     cursor: pointer;
     margin-bottom: 0.5rem;
+    background: #74a89b;
 }
 
 label {

@@ -27,8 +27,6 @@ export default function Sidebar(props: {
         </div>
         <div className="settings">
             <label className="header">Settings</label>
-            <label>Credentials</label>
-            <button onClick={handleOpenAIButtonClick}>Set OpenAI key</button>
             <label>Model</label>
             <select
             value={props.selectedModel}
@@ -42,6 +40,8 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
+            <label>Credentials</label>
+            <button onClick={handleOpenAIButtonClick}>Set OpenAI key</button>
         </div>
       </div>
     </>

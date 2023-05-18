@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='gpt_code_ui',
-    version='0.42.7',
+    version='0.42.8',
     packages=find_packages(),
     package_data={'gpt_code_ui.webapp': ['static/*', 'static/assets/*']},
     install_requires=[

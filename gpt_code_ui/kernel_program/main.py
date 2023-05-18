@@ -15,9 +15,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import the CORS library
 
 
-import gpt_code.kernel_program.kernel_manager as kernel_manager
-import gpt_code.kernel_program.config as config
-import gpt_code.kernel_program.utils as utils
+import gpt_code_ui.kernel_program.kernel_manager as kernel_manager
+import gpt_code_ui.kernel_program.config as config
+import gpt_code_ui.kernel_program.utils as utils
 
 APP_PORT = 5000
 

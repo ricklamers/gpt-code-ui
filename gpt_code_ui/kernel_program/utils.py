@@ -5,7 +5,7 @@ import snakemq.packeter
 import snakemq.messaging
 import snakemq.message
 
-import gpt_code.kernel_program.config as config
+import gpt_code_ui.kernel_program.config as config
 
 def escape_ansi(line):
     ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")

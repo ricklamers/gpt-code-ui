@@ -11,8 +11,8 @@ import webbrowser
 
 from multiprocessing import Process
 
-from gpt_code.webapp.main import app, APP_PORT
-from gpt_code.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
+from gpt_code_ui.webapp.main import app, APP_PORT
+from gpt_code_ui.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
 
 APP_URL = "http://localhost:%s" % APP_PORT
 

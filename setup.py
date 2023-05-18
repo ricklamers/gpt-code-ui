@@ -14,7 +14,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'gptcode = gpt_code.main:main',
+            'gptcode = gpt_code_ui.main:main',
         ],
     },
 )

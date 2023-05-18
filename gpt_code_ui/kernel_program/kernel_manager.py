@@ -13,8 +13,8 @@ import traceback
 from time import sleep
 from jupyter_client import BlockingKernelClient
 
-import gpt_code.kernel_program.utils as utils
-import gpt_code.kernel_program.config as config
+import gpt_code_ui.kernel_program.utils as utils
+import gpt_code_ui.kernel_program.config as config
 
 # Set up globals
 messaging = None

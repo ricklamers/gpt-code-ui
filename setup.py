@@ -1,8 +1,16 @@
 from setuptools import setup, find_packages
+from os import path
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name='gpt_code_ui',
-    version='0.42.9',
+    version='0.42.10',
+    description="An Open Source version of ChatGPT Code Interpreter",
+    long_description=long_description,
+    long_description_content_type='text/markdown',  # This field specifies the format of the `long_description`.
     packages=find_packages(),
     package_data={'gpt_code_ui.webapp': ['static/*', 'static/assets/*']},
     install_requires=[

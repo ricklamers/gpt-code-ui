@@ -5,8 +5,8 @@
 - (Done) Add prior chat message as context
 - (Done) Add download file support
 - (Done) Test bundling
-- Test uploading to PyPI
-- Create decent README
+- (Done) Test uploading to PyPI
+- (Done) Create decent README
 
 Nice-to-haves
 - GitHub action for PyPI publish on release

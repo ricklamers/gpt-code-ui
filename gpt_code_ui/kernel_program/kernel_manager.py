@@ -175,6 +175,9 @@ def start_kernel():
     launch_kernel_script_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "launch_kernel.py"
     )
+
+    os.makedirs('workspace/', exist_ok=True)
+
     kernel_process = subprocess.Popen(
         [
             sys.executable,

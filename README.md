@@ -19,7 +19,7 @@ $ gptcode
 ## Features
 - File upload
 - File download
-- Context insertion (it can refer to your previous messages)
+- Context awareness (it can refer to your previous messages)
 - Generate code
 - Run code (Python kernel)
 - Model switching (GPT-3.5 and GPT-4)

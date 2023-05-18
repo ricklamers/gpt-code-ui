@@ -19,7 +19,7 @@ export default function Sidebar(props: {
     <>
       <div className="sidebar">
         <div className="logo">
-            <AssistantIcon /> GPT-Code
+            <AssistantIcon /> GPT-Code UI
 
             <div className='github'>
                 <a href='https://github.com/ricklamers/gpt-code'>Open Source - v{import.meta.env.VITE_APP_VERSION}</a>

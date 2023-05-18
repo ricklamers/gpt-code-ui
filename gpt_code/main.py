@@ -57,7 +57,7 @@ def print_banner():
 █▄█ █▀▀ ░█░ ░░ █▄▄ █▄█ █▄▀ ██▄
         """)
 
-        print("> Open GPT-Code in your browser %s" % APP_URL)
+        print("> Open GPT-Code UI in your browser %s" % APP_URL)
         print("")
         print("You can inspect detailed logs in app.log.")
         print("")

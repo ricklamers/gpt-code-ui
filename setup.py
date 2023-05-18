@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='gpt_code',
+    name='gpt_code_ui',
     version='0.42.0',
     packages=find_packages(),
     install_requires=[

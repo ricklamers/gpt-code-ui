@@ -4,6 +4,7 @@ import sys
 import pathlib
 import json
 import logging
+import time
 
 import asyncio
 import json
@@ -29,6 +30,7 @@ kernel_manager_process = None
 
 # Use efficient Python queues to store messages
 result_queue = Queue()
+send_queue = Queue()
 
 messaging = None
 
@@ -82,17 +84,31 @@ async def start_snakemq():
     messaging.on_message_recv.add(on_recv)
     logger.info("Starting snakemq loop")
 
-    # Wrap the snakemq_link.Link loop in an asyncio task
-    loop = asyncio.get_event_loop()
-    link_loop_task = loop.run_in_executor(None, link.loop)
+    def send_queued_messages():
+        while True:
+            if send_queue.qsize() > 0:
+                message = send_queue.get()
+                utils.send_json(messaging, 
+                    {"type": "execute", "value": message["command"]}, 
+                    config.IDENT_KERNEL_MANAGER
+                )
+            time.sleep(0.1)
 
-    # Wait for the snakemq_link.Link loop to complete (if ever)
-    await link_loop_task
+    async def async_send_queued_messages():
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, send_queued_messages)
+
+    async def async_link_loop():
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, link.loop)
+
+    # Wrap the snakemq_link.Link loop in an asyncio task
+    await asyncio.gather(async_send_queued_messages(), async_link_loop())
 
 
 @app.route("/api", methods=["POST", "GET"])
 def handle_request():
-    
+   
     if request.method == "GET":
         # Handle GET requests by sending everything that's in the receive_queue
         results = [result_queue.get() for _ in range(result_queue.qsize())]
@@ -100,10 +116,8 @@ def handle_request():
     elif request.method == "POST":
         data = request.json
 
-        utils.send_json(messaging, 
-            {"type": "execute", "value": data["command"]}, 
-            config.IDENT_KERNEL_MANAGER
-        )
+        send_queue.put(data)
+
         return jsonify({"result": "success"})
     
 @app.route("/restart", methods=["POST"])

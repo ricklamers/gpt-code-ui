@@ -29,3 +29,6 @@ $ gptcode
 ## Misc.
 ### Using .env for OpenAI key
 You can put a .env in the working directory to load the `OPENAI_API_KEY` environment variable.
+
+## Contributing
+Please do! This should be a community initiative. I'll try my best to be responsive.

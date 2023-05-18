@@ -9,7 +9,7 @@ Simply ask the OpenAI model to do something and it will generate & execute the c
 Open a terminal and run:
 
 ```
-$ pip install gpt-code
+$ pip install gpt-code-ui
 $ gptcode
 ```
 

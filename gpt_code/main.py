@@ -38,8 +38,14 @@ def setup_logging():
     file_handler.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(file_handler)
 
-def print_gray(text):
-    gray_code = "\033[38;5;242m"
+def print_color(text, color="gray"):
+    # Default to gray
+    code="242"
+
+    if color == "green":
+        code="35"
+    
+    gray_code = "\033[38;5;%sm" % code
     reset_code = "\033[0m"
     print(f"{gray_code}{text}{reset_code}")
 
@@ -55,10 +61,9 @@ def print_banner():
         print("")
         print("You can inspect detailed logs in app.log.")
         print("")
-        print_gray("Like GPT-Code? Check out https://ricklamers.io.")
-        print_gray("I'm looking for exciting MLE opportunities!")
-        print_gray("")
-        print_gray("Contribute to the project at https://github.com/ricklamers/gpt-code")   
+        print_color("I'm looking for exciting MLE opportunities! Find out more https://ricklamers.io/about", color="green")
+        print_color("")
+        print_color("Contribute to GPT-Code at https://github.com/ricklamers/gpt-code")   
 
 def main():
     setup_logging()

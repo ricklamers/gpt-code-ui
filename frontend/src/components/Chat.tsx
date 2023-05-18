@@ -1,6 +1,6 @@
 import "./Chat.css";
 
-import SmartToyIcon from "@mui/icons-material/SmartToy";
+import VoiceChatIcon from "@mui/icons-material/VoiceChat";
 import PersonIcon from "@mui/icons-material/Person";
 import { MessageDict } from "../App";
 
@@ -19,7 +19,7 @@ function Message(props: {
     <div className={"message " + (role == "system" ? "system" : "user")}>
       <div className="avatar-holder">
         <div className="avatar">
-          {role == "system" ? <SmartToyIcon /> : <PersonIcon />}
+          {role == "system" ? <VoiceChatIcon /> : <PersonIcon />}
         </div>
       </div>
       <div className="message-body">

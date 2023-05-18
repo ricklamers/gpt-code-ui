@@ -20,7 +20,7 @@ import gpt_code_ui.kernel_program.kernel_manager as kernel_manager
 import gpt_code_ui.kernel_program.config as config
 import gpt_code_ui.kernel_program.utils as utils
 
-APP_PORT = 5000
+APP_PORT = 5010
 
 # Get global logger
 logger = config.get_logger()

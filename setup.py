@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='gpt_code_ui',
-    version='0.42.0',
+    version='0.42.1',
     packages=find_packages(),
     install_requires=[
         'ipykernel>=6,<7',

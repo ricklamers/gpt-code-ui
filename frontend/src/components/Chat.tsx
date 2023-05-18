@@ -38,7 +38,7 @@ function Message(props: {
               {text} {props.showLoader ? <div className="loader"></div> : null}
             </div>
           ) : (
-            <div dangerouslySetInnerHTML={{ __html: text }}></div>
+            <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
       </div>
     </div>

@@ -65,7 +65,7 @@ def print_banner():
         print("")
         print_color("I'm looking for exciting MLE opportunities! Find out more https://ricklamers.io/about", color="green")
         print_color("")
-        print_color("Contribute to GPT-Code at https://github.com/ricklamers/gpt-code")   
+        print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")   
 
 def main():
     setup_logging()

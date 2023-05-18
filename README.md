@@ -21,7 +21,7 @@ $ gptcode
 - File download
 - Context insertion (it can refer to your previous messages)
 - Generate code
-- Code running
+- Run code (Python kernel)
 - Model switching (GPT-3.5 and GPT-4)
 
 ## More information

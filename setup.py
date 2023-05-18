@@ -2,8 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='gpt_code_ui',
-    version='0.42.2',
+    version='0.42.3',
     packages=find_packages(),
+    package_data={'gpt_code_ui.webapp': ['static/*']},
     install_requires=[
         'ipykernel>=6,<7',
         'snakemq>=1,<2',

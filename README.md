@@ -4,6 +4,8 @@ An open source implementation of OpenAI's ChatGPT [Code interpreter](https://ope
 
 Simply ask the OpenAI model to do something and it will generate & execute the code for you.
 
+Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
+
 ## Installation
 
 Open a terminal and run:
@@ -23,9 +25,6 @@ $ gptcode
 - Generate code
 - Run code (Python kernel)
 - Model switching (GPT-3.5 and GPT-4)
-
-## More information
-Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
 ## Misc.
 ### Using .env for OpenAI key

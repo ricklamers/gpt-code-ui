@@ -1,6 +1,6 @@
 <img src="repo_assets/logo.png" alt="GPT-Code logo" width=240 />
 
-An open source implementation of OpenAI's ChatGPT Code Interpreter.
+An open source implementation of OpenAI's ChatGPT [Code interpreter](https://openai.com/blog/chatgpt-plugins#code-interpreter).
 
 Simply ask the OpenAI model to do something and it will generate & execute the code for you.
 

@@ -29,4 +29,4 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
 ## Misc.
 ### Using .env for OpenAI key
-You can put a .env in the root of the repository directory to load the OPENAI_API_KEY environment variable.
+You can put a .env in the root of the repository directory to load the `OPENAI_API_KEY` environment variable.

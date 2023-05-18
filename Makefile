@@ -17,6 +17,7 @@ compile_frontend:
 	rsync -av dist/ ../gpt_code_ui/webapp/static
 
 bundle_pypi:
+	rm -rf dist && \
 	python setup.py sdist bdist_wheel
 
 upload_pypi:

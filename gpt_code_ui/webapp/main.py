@@ -121,10 +121,9 @@ def download_file():
 
     # Get query argument file
     file = request.args.get('file')
-
     # from `workspace/` send the file
     # make sure to set required headers to make it download the file
-    return send_from_directory('../../workspace/', file, as_attachment=True)
+    return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
 
 
 @app.route('/inject-context', methods=['POST'])

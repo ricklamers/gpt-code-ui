@@ -81,7 +81,7 @@ export default function Chat(props: {
           <Message
             text={props.waitingForSystem}
             role="system"
-            type="text"
+            type="message"
             showLoader={true}
           />
         ) : null}

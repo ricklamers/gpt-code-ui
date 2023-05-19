@@ -1,8 +1,8 @@
 #!/bin/bash
-VERSION=$(shell sed -n "s/^.*version='\([^']*\)'.*$$/\1/p" setup.py)
+VERSION=$(sed -n "s/^.*version='\([^']*\)'.*$$/\1/p" setup.py)
 TAG="v$VERSION"
 TITLE="$TAG"
-DESCRIPTION="Install with `pip install gpt-code-ui` or download bundle and run `pip install -e .`."
+DESCRIPTION="Install with \`pip install gpt-code-ui\` or download bundle and run \`pip install -e .\`."
 
 # If $GH_API_TOKEN print error
 if [ -z "$GH_API_TOKEN" ]; then
@@ -10,6 +10,6 @@ if [ -z "$GH_API_TOKEN" ]; then
     exit 1
 fi
 
-API_JSON=$(printf '{"tag_name": "%s", "target_commitish": "master", "name": "%s", "body": "%s", "draft": false, "prerelease": false}' "$TAG" "$TITLE" "$DESCRIPTION")
+API_JSON=$(printf '{"tag_name": "%s", "target_commitish": "main", "name": "%s", "body": "%s", "draft": false, "prerelease": false}' "$TAG" "$TITLE" "$DESCRIPTION")
 
-curl --data "$API_JSON" https://api.github.com/repos/ricklamers/gpt-code-ui/releases?access_token=$GH_API_TOKEN
+curl -H "Authorization: token $GH_API_TOKEN" --data "$API_JSON" https://api.github.com/repos/ricklamers/gpt-code-ui/releases

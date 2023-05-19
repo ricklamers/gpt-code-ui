@@ -21,7 +21,7 @@ increment_version:
 	echo "Updated version to $$NEW_VERSION"
 
 release:
-	bash create_release.sh
+	bash scripts/create_release.sh
 
 compile_frontend:
 	cd frontend && \

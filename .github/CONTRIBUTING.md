@@ -48,7 +48,7 @@ We welcome ideas for improvements and new features. To suggest an enhancement, o
 
 ### Code Style
 
-gpt-code-ui uses [{codestyle}]({URLofCodestyle}) as its code style guide. Please ensure that your code follows these guidelines. 
+gpt-code-ui uses [Black](https://black.readthedocs.io/en/stable/the_black_code_style/index.html) as its code style guide. Please ensure that your code follows these guidelines. 
 
 ### Commit Messages
 
@@ -58,7 +58,7 @@ Write clear and concise commit messages that briefly describe the changes made i
 
 - [GitHub Help](https://help.github.com/)
 - [GitHub Pull Request Documentation](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests)
-- [{codestyle}]({URLofCodestyle})
+- [Black](https://black.readthedocs.io/en/stable/the_black_code_style/index.html)
 
 Thank you once again for your interest in contributing to gpt-code-ui. We look forward to collaborating with you and creating an even better project together!
 

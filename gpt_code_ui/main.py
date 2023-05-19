@@ -105,3 +105,6 @@ def main():
         kernel_program_process.join()
 
         print("Processes terminated.")
+        
+if __name__ == '__main__':
+    main()

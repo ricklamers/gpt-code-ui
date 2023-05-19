@@ -1,5 +1,5 @@
 #!/bin/bash
-VERSION=$(sed -n "s/^.*version='\([^']*\)'.*$$/\1/p" setup.py)
+VERSION=$(grep -oP "(?<=version=')[^']*" setup.py)
 TAG="v$VERSION"
 TITLE="$TAG"
 DESCRIPTION="Install with \`pip install gpt-code-ui\` or download bundle and run \`pip install -e .\`."

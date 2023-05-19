@@ -1,7 +1,7 @@
 .PHONY: all compile_frontend bundle_pypi upload_pypi increment_version release
 
 # Extract version from setup.py file
-VERSION := $(shell sed -n "s/^.*version='\([^']*\)'.*$$/\1/p" setup.py)
+VERSION := $(shell grep -oP "(?<=version=')[^']*" setup.py)
 
 all: build upload_pypi
 

@@ -31,4 +31,4 @@ $ gptcode
 You can put a .env in the working directory to load the `OPENAI_API_KEY` environment variable.
 
 ## Contributing
-Please do! This should be a community initiative. I'll try my best to be responsive.
+Please do and have a look at the [contributions guide](.github/CONTRIBUTING.md)! This should be a community initiative. I'll try my best to be responsive.

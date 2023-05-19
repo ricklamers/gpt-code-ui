@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 load_dotenv('.env')
 
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
+
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -68,9 +70,9 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {final_openai_key}",
     }
-
+    
     response = requests.post(
-        "https://api.openai.com/v1/chat/completions",
+        f"{OPENAI_BASE_URL}/v1/chat/completions",
         data=json.dumps(data),
         headers=headers,
     )

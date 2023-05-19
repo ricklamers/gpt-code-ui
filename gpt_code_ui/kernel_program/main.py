@@ -73,13 +73,19 @@ async def start_snakemq():
         if message["type"] == "status":
             if message["value"] == "ready":
                 logger.debug("Kernel is ready.")
-                result_queue.put("Kernel is ready.")
+                result_queue.put({
+                    "value":"Kernel is ready.",
+                    "type": "message"
+                })
 
-        elif message["type"] in ["message", "message_raw", "image/png"]:
+        elif message["type"] in ["message", "message_raw", "image/png", "image/jpeg"]:
             # TODO: 1:1 kernel <> channel mapping
             logger.debug("%s of type %s" % (message["value"], message["type"]))
 
-            result_queue.put(message["value"])
+            result_queue.put({
+                "value": message["value"],
+                "type": message["type"]
+            })
 
     messaging.on_message_recv.add(on_recv)
     logger.info("Starting snakemq loop")

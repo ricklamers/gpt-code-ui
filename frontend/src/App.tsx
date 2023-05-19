@@ -9,7 +9,7 @@ import { useLocalStorage } from "usehooks-ts";
 export type MessageDict = {
   text: string;
   role: string;
-  kind: string;
+  type: string;
 };
 
 function App() {
@@ -37,12 +37,12 @@ function App() {
       {
         text: "Hello! I'm a GPT Code assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
         role: "system",
-        kind: "text",
+        type: "message",
       },
       {
         text: "If I get stuck just type 'reset' and I'll restart the kernel.",
         role: "system",
-        kind: "text",
+        type: "message",
       },
     ])
   );
@@ -73,7 +73,7 @@ function App() {
     if (command == "reset") {
       addMessage({
         text: "Restarting the kernel.",
-        kind: "text",
+        type: "message",
         role: "system",
       });
 
@@ -99,7 +99,7 @@ function App() {
         return;
       }
 
-      addMessage({ text: userInput, kind: "text", role: "user" });
+      addMessage({ text: userInput, type: "message", role: "user" });
       setWaitingForSystem(WaitingStates.GeneratingCode);
 
       const response = await fetch(`${Config.WEB_ADDRESS}/generate`, {
@@ -119,7 +119,7 @@ function App() {
       const data = await response.json();
       const code = data.code;
 
-      addMessage({ text: code, kind: "code", role: "system" });
+      addMessage({ text: code, type: "code", role: "system" });
 
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);
@@ -143,12 +143,12 @@ function App() {
     
     let response = await fetch(`${Config.API_ADDRESS}/api`);
     let data = await response.json();
-    data.results.forEach(function (result: string) {
-      if (result.trim().length == 0) {
+    data.results.forEach(function (result: {value: string, type: string}) {
+      if (result.value.trim().length == 0) {
         return;
       }
 
-      addMessage({ text: result, kind: "text", role: "system" });
+      addMessage({ text: result.value, type: result.type, role: "system" });
       setWaitingForSystem(WaitingStates.Idle);
     });
   }
@@ -156,7 +156,7 @@ function App() {
   function completeUpload(filename: string) {
     addMessage({
       text: `File ${filename} was uploaded successfully.`,
-      kind: "text",
+      type: "message",
       role: "system",
     });
 

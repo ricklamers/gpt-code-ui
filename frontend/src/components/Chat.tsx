@@ -10,7 +10,7 @@ import { RefObject } from "react";
 function Message(props: {
   text: string;
   role: string;
-  kind: string;
+  type: string;
   showLoader?: boolean;
 }) {
   let { text, role } = props;
@@ -23,7 +23,7 @@ function Message(props: {
         </div>
       </div>
       <div className="message-body">
-        {props.kind == "code" && (
+        {props.type == "code" && (
           <div>
             I generated the following code:
             <SyntaxHighlighter wrapLongLines={true} language="python">
@@ -32,7 +32,7 @@ function Message(props: {
           </div>
         )}
 
-        {props.kind != "code" &&
+        {(props.type == "message" || props.type == "message_raw") &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}
@@ -40,7 +40,14 @@ function Message(props: {
           ) : (
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
-      </div>
+        
+        {props.type == "image/png" &&
+          <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/png;base64,${text}' />` }}></div>
+        }
+        {props.type == "image/jpeg" &&
+          <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/jpeg;base64,${text}' />` }}></div>
+        }
+        </div>
     </div>
   );
 }
@@ -66,7 +73,7 @@ export default function Chat(props: {
               key={index}
               text={message.text}
               role={message.role}
-              kind={message.kind}
+              type={message.type}
             />
           );
         })}
@@ -74,7 +81,7 @@ export default function Chat(props: {
           <Message
             text={props.waitingForSystem}
             role="system"
-            kind="text"
+            type="text"
             showLoader={true}
           />
         ) : null}

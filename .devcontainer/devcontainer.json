@@ -3,8 +3,7 @@
 {
 	"name": "Python 3",
  
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-    "initializeCommand": "make compile_frontend"
+    	"initializeCommand": "make compile_frontend"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},

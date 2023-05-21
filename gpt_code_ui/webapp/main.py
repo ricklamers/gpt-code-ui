@@ -10,8 +10,10 @@ import sys
 from collections import deque
 
 from flask_cors import CORS
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 from dotenv import load_dotenv
+
+from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 
 load_dotenv('.env')
 
@@ -21,7 +23,9 @@ OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-APP_PORT = 8080
+
+APP_PORT = int(os.environ.get("WEB_PORT", 8080))
+
 
 class LimitedLengthString:
     def __init__(self, maxlen=2000):
@@ -42,6 +46,7 @@ class LimitedLengthString:
 
 
 message_buffer = LimitedLengthString()
+
 
 def allowed_file(filename):
     return True
@@ -70,7 +75,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         "Content-Type": "application/json",
         "Authorization": f"Bearer {final_openai_key}",
     }
-    
+
     response = requests.post(
         f"{OPENAI_BASE_URL}/v1/chat/completions",
         data=json.dumps(data),
@@ -110,7 +115,29 @@ CORS(app)
 
 @app.route('/')
 def index():
+
+    # Check if index.html exists in the static folder
+    if not os.path.exists(os.path.join(app.root_path, 'static/index.html')):
+        print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
+
     return send_from_directory('static', 'index.html')
+
+
+@app.route('/api/<path:path>', methods=["GET", "POST"])
+def proxy_kernel_manager(path):
+    if request.method == "POST":
+        resp = requests.post(
+            f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
+    else:
+        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
+
+    excluded_headers = ['content-encoding',
+                        'content-length', 'transfer-encoding', 'connection']
+    headers = [(name, value) for (name, value) in resp.raw.headers.items()
+               if name.lower() not in excluded_headers]
+
+    response = Response(resp.content, resp.status_code, headers)
+    return response
 
 
 @app.route('/assets/<path:path>')

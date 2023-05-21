@@ -8,6 +8,7 @@ textarea {
     font-size: 1rem;
     line-height: 1.5rem;
     resize: none;
+    max-height: 300px;
 }
 
 textarea:focus {

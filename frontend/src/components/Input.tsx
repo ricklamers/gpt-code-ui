@@ -65,7 +65,7 @@ export default function Input(props: { onSendMessage: any, onStartUpload: any, o
   };
 
   const handleKeyDown = (e: any) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && e.shiftKey === false) {
         e.preventDefault();
         handleSendMessage();
     }

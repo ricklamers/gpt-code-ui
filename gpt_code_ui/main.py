@@ -18,7 +18,7 @@ APP_URL = "http://localhost:%s" % APP_PORT
 
 def run_webapp():
     try:
-        app.run(port=APP_PORT, use_reloader=False)
+        app.run(host="0.0.0.0", port=APP_PORT, use_reloader=False)
     except Exception as e:
         logging.exception("Error running the webapp:")
         sys.exit(1)

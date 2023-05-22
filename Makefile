@@ -1,11 +1,11 @@
-.PHONY: all compile_frontend bundle_pypi upload_pypi increment_version release
+.PHONY: all compile_frontend bundle_pypi upload_pypi increment_version release check_env_var
 
 # Extract version from setup.py file
 VERSION := $(shell grep -oP "(?<=version=')[^']*" setup.py)
 
-all: build upload_pypi
+all: check_env_var build upload_pypi
 
-build: compile_frontend bundle_pypi
+build: check_env_var compile_frontend bundle_pypi
 
 setenv:
     export VITE_APP_VERSION=${VERSION}
@@ -36,3 +36,10 @@ bundle_pypi:
 
 upload_pypi:
 	twine upload dist/*
+
+check_env_var:
+ifeq ($(VITE_WEB_ADDRESS),)
+	@echo "VITE_WEB_ADDRESS not set, proceeding..."
+else
+	$(error "VITE_WEB_ADDRESS is set, aborting...")
+endif

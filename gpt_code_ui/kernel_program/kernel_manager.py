@@ -13,6 +13,9 @@ import traceback
 from time import sleep
 from jupyter_client import BlockingKernelClient
 
+from dotenv import load_dotenv
+load_dotenv('.env')
+
 import gpt_code_ui.kernel_program.utils as utils
 import gpt_code_ui.kernel_program.config as config
 

@@ -1,5 +1,6 @@
 # Secrets
 .env
+.dev.env
 
 # Program related
 process_pids/

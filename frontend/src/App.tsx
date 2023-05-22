@@ -82,6 +82,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({}),
       })
         .then(() => {})
         .catch((error) => console.error("Error:", error));

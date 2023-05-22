@@ -14,11 +14,14 @@ from queue import Queue
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import the CORS library
+from dotenv import load_dotenv
 
 
 import gpt_code_ui.kernel_program.kernel_manager as kernel_manager
 import gpt_code_ui.kernel_program.config as config
 import gpt_code_ui.kernel_program.utils as utils
+
+load_dotenv('.env')
 
 APP_PORT = int(os.environ.get("API_PORT", 5010))
 

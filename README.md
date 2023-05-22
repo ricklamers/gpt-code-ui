@@ -31,7 +31,7 @@ $ gptcode
 You can put a .env in the working directory to load the `OPENAI_API_KEY` environment variable.
 
 ### Configurables
-Set the `API_PORT` and `WEB_PORT` variables to override the defaults.
+Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.
 
 Set `OPENAI_BASE_URL` to change the OpenAI API endpoint that's being used (note this environment variable includes the protocol `https://...`).
 

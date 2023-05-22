@@ -27,6 +27,7 @@ compile_frontend:
 	cd frontend && \
 	npm install && \
 	npm run build && \
+	find ../gpt_code_ui/webapp/static -mindepth 1 ! -name '.gitignore' -delete && \
 	rsync -av dist/ ../gpt_code_ui/webapp/static
 
 bundle_pypi:

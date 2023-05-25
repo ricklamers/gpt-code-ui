@@ -30,6 +30,25 @@ $ gptcode
 ### Using .env for OpenAI key
 You can put a .env in the working directory to load the `OPENAI_API_KEY` environment variable.
 
+Note: Please use the following commands in the terminal to create and edit the `.env` file.
+
+For **Windows** : 
+
+`copy con .env` # Create a new **.env** file.
+
+`notepad.exe .env` # Edit the **.env** file.
+                  
+For **Linux** :
+
+`nano .env` # Edits the file or creates a new one if not available.
+
+
+For **MacOS** :
+
+touch `.env` # Creates a new **.env** file.
+
+`nano .env`(Recommended) or `vim .env` # Edits the **.env** file.
+           
 ### Configurables
 Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.
 

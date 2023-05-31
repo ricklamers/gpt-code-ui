@@ -1,0 +1,10 @@
+ipykernel>=6,<7
+snakemq>=1,<2
+requests>=2,<3
+Flask>=2,<3
+flask-cors>=3,<4
+python-dotenv>=1,<2
+pandas
+matplotlib
+openpyxl
+sympy

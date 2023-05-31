@@ -64,7 +64,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
                 "content": prompt,
             },
         ],
-        "temperature": 0.7,
+        "temperature": 0.2,
     }
 
     final_openai_key = OPENAI_API_KEY

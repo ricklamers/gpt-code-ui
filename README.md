@@ -11,8 +11,10 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 Open a terminal and run:
 
 ```
-$ pip install gpt-code-ui
-$ gptcode
+cp .env.example .env
+make compile_frontend
+pip install gpt-code-ui
+gptcode
 ```
 
 ## User interface

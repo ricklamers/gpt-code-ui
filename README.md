@@ -12,7 +12,6 @@ Open a terminal and run:
 
 ```
 cp .env.example .env
-make compile_frontend
 pip install gpt-code-ui
 gptcode
 ```

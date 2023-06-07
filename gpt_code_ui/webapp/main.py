@@ -17,8 +17,12 @@ from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 
 load_dotenv('.env')
 
+OPENAI_API_TYPE = os.environ.get("OPENAI_API_TYPE", "openai")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
+OPENAI_API_VERSION = os.environ.get("OPENAI_API_VERSION", "2023-03-15-preview")
+AZURE_OPENAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "")
+
 
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -55,32 +59,51 @@ def allowed_file(filename):
 async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
 
     prompt = f"First, here is a history of what I asked you to do earlier. The actual prompt follows after ENDOFHISTORY. History:\n\n{message_buffer.get_string()}ENDOFHISTORY.\n\nWrite Python code that does the following: \n\n{user_prompt}\n\nNote, the code is going to be executed in a Jupyter Python kernel.\n\nLast instruction, and this is the most important, just return code. No other outputs, as your full response will directly be executed in the kernel. \n\nTeacher mode: if you want to give a download link, just print it as <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename. So just print that HTML to stdout. No actual downloading of files!"
-
-    data = {
-        "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-        "temperature": 0.7,
-    }
+    temperature = 0.7
+    message_array = [
+        {
+            "role": "user",
+            "content": prompt,
+        },
+    ]
 
     final_openai_key = OPENAI_API_KEY
     if user_openai_key:
         final_openai_key = user_openai_key
 
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {final_openai_key}",
-    }
+    if OPENAI_API_TYPE == "openai":
+        data = {
+            "model": model,
+            "messages": message_array,
+            "temperature": temperature,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {final_openai_key}",
+        }
 
-    response = requests.post(
-        f"{OPENAI_BASE_URL}/v1/chat/completions",
-        data=json.dumps(data),
-        headers=headers,
-    )
+        response = requests.post(
+            f"{OPENAI_BASE_URL}/v1/chat/completions",
+            data=json.dumps(data),
+            headers=headers,
+        )
+    elif OPENAI_API_TYPE == "azure":
+        data = {
+            "messages": message_array,
+            "temperature": temperature,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "api-key": f"{final_openai_key}",
+        }
+
+        response = requests.post(
+            f"{OPENAI_BASE_URL}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version={OPENAI_API_VERSION}",
+            data=json.dumps(data),
+            headers=headers,
+        )
+    else:
+        return "Error: Invalid OPENAI_PROVIDER", 500
 
     def extract_code(text):
         # Match triple backtick blocks first

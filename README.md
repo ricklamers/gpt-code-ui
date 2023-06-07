@@ -11,7 +11,6 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 Open a terminal and run:
 
 ```
-cp .env.example .env
 pip install gpt-code-ui
 gptcode
 ```
@@ -35,6 +34,14 @@ You can put a .env in the working directory to load the `OPENAI_API_KEY` environ
 Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.
 
 Set `OPENAI_BASE_URL` to change the OpenAI API endpoint that's being used (note this environment variable includes the protocol `https://...`).
+
+You can use the `.env.example` in the repository (make sure you `git clone` the repo to get the file first).
+
+```
+cp .env.example .env
+vim .env
+gptcode
+```
 
 ### Docker
 [localagi](https://github.com/localagi) took the effort of bundling the Python package in a Docker container. Check it out here: [gpt-code-ui-docker](https://github.com/localagi/gpt-code-ui-docker).

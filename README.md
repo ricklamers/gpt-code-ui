@@ -37,6 +37,9 @@ Set `OPENAI_BASE_URL` to change the OpenAI API endpoint that's being used (note 
 
 You can use the `.env.example` in the repository (make sure you `git clone` the repo to get the file first).
 
+For Azure OpenAI Services, there are also other configurable variables like deployment name. See `.env.azure-example` for more information.
+Note that model selection on the UI is currently not supported for Azure OpenAI Services.
+
 ```
 cp .env.example .env
 vim .env

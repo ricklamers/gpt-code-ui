@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='gpt_code_ui',
-    version='0.42.29',
+    version='0.42.30',
     description="An Open Source version of ChatGPT Code Interpreter",
     long_description=long_description,
     long_description_content_type='text/markdown',  # This field specifies the format of the `long_description`.

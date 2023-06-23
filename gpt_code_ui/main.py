@@ -63,8 +63,6 @@ def print_banner():
         print("")
         print("Find your OpenAI API key at https://platform.openai.com/account/api-keys")
         print("")
-        print_color("I'm looking for exciting MLE opportunities! Find out more https://ricklamers.io/about", color="green")
-        print_color("")
         print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")   
 
 def main():

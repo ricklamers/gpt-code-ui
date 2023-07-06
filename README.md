@@ -6,6 +6,9 @@ Simply ask the OpenAI model to do something and it will generate & execute the c
 
 Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
+## Community
+Judah Cooper offered to start & curate a Discord community. Join [here](https://discord.gg/ZmTQwpkYu6).
+
 ## Installation
 
 Open a terminal and run:

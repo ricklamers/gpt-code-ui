@@ -61,3 +61,6 @@ gptcode
 
 ## Contributing
 Please do and have a look at the [contributions guide](.github/CONTRIBUTING.md)! This should be a community initiative. I'll try my best to be responsive.
+
+
+Thank you for your interest in this project!

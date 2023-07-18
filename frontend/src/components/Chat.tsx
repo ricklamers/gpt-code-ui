@@ -6,6 +6,7 @@ import { MessageDict } from "../App";
 
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { RefObject } from "react";
+import ReactMarkdown from 'react-markdown';
 
 function Message(props: {
   text: string;
@@ -14,6 +15,11 @@ function Message(props: {
   showLoader?: boolean;
 }) {
   let { text, role } = props;
+
+  const isMarkdown = (input: string) => {
+    const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*/g;
+    return mdRegex.test(input);
+  }
 
   return (
     <div className={"message " + (role == "system" ? "system" : "user")}>
@@ -32,7 +38,18 @@ function Message(props: {
           </div>
         )}
 
-        {(props.type == "message" || props.type == "message_raw") &&
+        {props.type == "message" &&
+          (props.showLoader ? (
+            <div>
+              {text} {props.showLoader ? <div className="loader"></div> : null}
+            </div>
+          ) : (
+            isMarkdown(text) ? 
+            <ReactMarkdown children={text} /> : 
+            <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
+          ))}
+
+        {(props.type == "message_raw") &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}
@@ -47,10 +64,11 @@ function Message(props: {
         {props.type == "image/jpeg" &&
           <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/jpeg;base64,${text}' />` }}></div>
         }
-        </div>
+      </div>
     </div>
   );
 }
+
 
 export enum WaitingStates {
   GeneratingCode = "Generating code",

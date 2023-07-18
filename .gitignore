@@ -9,6 +9,7 @@ kernel_connection_file.json
 # Python stuff
 *.egg-info/
 venv
+.venv
 __pycache__/
 
 # IDE

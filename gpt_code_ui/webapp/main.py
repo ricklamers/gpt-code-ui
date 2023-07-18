@@ -85,7 +85,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
     
-    Teacher mode: if the code modifies or produces a file, end your output AFTER YOUR CODE BLOCK with a link to it as <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename. So just print that HTML to stdout at the end, AFTER your code block."""
+    Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename."""
     temperature = 0.7
     message_array = [
         {
@@ -132,6 +132,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
     else:
         return "Error: Invalid OPENAI_PROVIDER", 500
 
+
     def extract_code(text):
         # Match triple backtick blocks first
         triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
@@ -142,13 +143,20 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
             single_match = re.search(r'`(.+?)`', text, re.DOTALL)
             if single_match:
                 return single_match.group(1).strip()
-        # If no code blocks found, return original text
-        return text
+
+    def extract_non_code(text):
+        # Replace triple backtick blocks
+        text = re.sub(r'```(?:\w+\n)?(.+?)```', '', text, flags=re.DOTALL)
+        # Replace single backtick blocks
+        text = re.sub(r'`(.+?)`', '', text, flags=re.DOTALL)
+        return text.strip()
+
 
     if response.status_code != 200:
         return "Error: " + response.text, 500
 
-    return extract_code(response.json()["choices"][0]["message"]["content"]), 200
+    content = response.json()["choices"][0]["message"]["content"]
+    return extract_code(content), extract_non_code(content), 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
@@ -224,14 +232,14 @@ def generate_code():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    code, status = loop.run_until_complete(
+    code, text, status = loop.run_until_complete(
         get_code(user_prompt, user_openai_key, model))
     loop.close()
 
     # Append all messages to the message buffer for later use
     message_buffer.append(user_prompt + "\n\n")
 
-    return jsonify({'code': code}), status
+    return jsonify({'code': code, 'text': text}), status
 
 
 @app.route('/upload', methods=['POST'])

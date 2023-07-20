@@ -7,7 +7,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='gpt_code_ui',
-    version='0.42.35',
+    version='0.42.36',
     description="An Open Source version of ChatGPT Code Interpreter",
     long_description=long_description,
     long_description_content_type='text/markdown',  # This field specifies the format of the `long_description`.
@@ -19,7 +19,8 @@ setup(
         'requests>=2,<3',
         'Flask>=2,<3',
         'flask-cors>=3,<4',
-        'python-dotenv>=0.18,<2'
+        'python-dotenv>=0.18,<2',
+        'pandas>=1.3,<2',
     ],
     entry_points={
         'console_scripts': [

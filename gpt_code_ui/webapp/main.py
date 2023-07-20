@@ -130,7 +130,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
             headers=headers,
         )
     else:
-        return "Error: Invalid OPENAI_PROVIDER", 500
+        return None, "Error: Invalid OPENAI_PROVIDER", 500
 
 
     def extract_code(text):
@@ -153,7 +153,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
 
 
     if response.status_code != 200:
-        return "Error: " + response.text, 500
+        return None, "Error: " + response.text, 500
 
     content = response.json()["choices"][0]["message"]["content"]
     return extract_code(content), extract_non_code(content), 200

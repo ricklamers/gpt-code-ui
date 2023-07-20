@@ -1,7 +1,7 @@
 .PHONY: all compile_frontend bundle_pypi upload_pypi increment_version release check_env_var
 
 # Extract version from setup.py file
-VERSION := $(shell grep -oP "(?<=version=')[^']*" setup.py)
+VERSION := $(shell grep -e "^\s*version='[ˆ']*" setup.py | cut -d "'" -f 2)
 
 all: check_env_var build upload_pypi
 
@@ -11,7 +11,7 @@ setenv:
     export VITE_APP_VERSION=${VERSION}
 
 increment_version:
-	@VERSION=$$(grep -oP "(?<=version=')[^']*" setup.py) && \
+	@VERSION=$$(grep -e "^\s*version='[ˆ']*" setup.py | cut -d "'" -f 2) && \
 	MAJOR=$$(echo $$VERSION | cut -d. -f1) && \
 	MINOR=$$(echo $$VERSION | cut -d. -f2) && \
 	PATCH=$$(echo $$VERSION | cut -d. -f3) && \

@@ -6,6 +6,7 @@ import asyncio
 import re
 import logging
 import sys
+import pandas as pd
 
 from collections import deque
 
@@ -54,6 +55,33 @@ message_buffer = LimitedLengthString()
 
 def allowed_file(filename):
     return True
+
+
+def inspect_file(filename: str) -> str:
+    READER_MAP = {
+        '.csv': pd.read_csv,
+        '.tsv': pd.read_csv,
+        '.xlsx': pd.read_excel,
+        '.xls': pd.read_excel,
+        '.xml': pd.read_xml,
+        '.json': pd.read_json,
+        '.hdf': pd.read_hdf,
+        '.hdf5': pd.read_hdf,
+        '.feather': pd.read_feather,
+        '.parquet': pd.read_parquet,
+        '.pkl': pd.read_pickle,
+        '.sql': pd.read_sql,
+    }
+
+    _, ext = os.path.splitext(filename)
+
+    try:
+        df = READER_MAP[ext.lower()](filename)
+        return f'The file contains the following columns: {", ".join(df.columns)}'
+    except KeyError:
+        return ''  # unsupported file type
+    except Exception:
+        return ''  # file reading failed. - Don't want to know why.
 
 
 async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
@@ -253,8 +281,10 @@ def upload_file():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file and allowed_file(file.filename):
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], file.filename))
-        return jsonify({'message': 'File successfully uploaded'}), 200
+        file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_target)
+        file_info = inspect_file(file_target)
+        return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 

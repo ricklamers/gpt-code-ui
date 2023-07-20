@@ -1,24 +1,20 @@
 .PHONY: all compile_frontend bundle_pypi upload_pypi increment_version release check_env_var
 
-# Extract version from setup.py file
-VERSION := $(shell grep -e "^\s*version='[ˆ']*" setup.py | cut -d "'" -f 2)
-
 all: check_env_var build upload_pypi
 
 build: check_env_var compile_frontend bundle_pypi
 
-setenv:
-    export VITE_APP_VERSION=${VERSION}
-
 increment_version:
-	@VERSION=$$(grep -e "^\s*version='[ˆ']*" setup.py | cut -d "'" -f 2) && \
+	@VERSION=$$(grep -e "^\s*version='[^']*'" setup.py | cut -d "'" -f 2) && \
 	MAJOR=$$(echo $$VERSION | cut -d. -f1) && \
 	MINOR=$$(echo $$VERSION | cut -d. -f2) && \
 	PATCH=$$(echo $$VERSION | cut -d. -f3) && \
 	NEW_PATCH=$$((PATCH + 1)) && \
 	NEW_VERSION="$$MAJOR.$$MINOR.$$NEW_PATCH" && \
-	sed -i "s/version='.*'/version='$$NEW_VERSION'/" setup.py && \
+	sed -i.bak "s/version='[^']*'/version='$$NEW_VERSION'/" setup.py && \
+	rm setup.py.bak && \
 	echo "Updated version to $$NEW_VERSION"
+
 
 release:
 	bash scripts/create_release.sh

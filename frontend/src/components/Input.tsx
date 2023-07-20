@@ -43,11 +43,13 @@ export default function Input(props: { onSendMessage: any, onStartUpload: any, o
           body: formData,
         });
 
-        props.onCompletedUpload(file.name);
-
         if (!response.ok) {
           throw new Error("Network response was not ok");
         }
+
+        const json = await response.json();
+        props.onCompletedUpload(json["message"]);
+
       } catch (error) {
         console.error("Error:", error);
       }

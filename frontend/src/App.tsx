@@ -155,9 +155,9 @@ function App() {
     });
   }
 
-  function completeUpload(filename: string) {
+  function completeUpload(message: string) {
     addMessage({
-      text: `File ${filename} was uploaded successfully.`,
+      text: message,
       type: "message",
       role: "system",
     });
@@ -171,7 +171,7 @@ function App() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        prompt: `File ${filename} was uploaded successfully.`,
+        prompt: message,
       }),
     })
       .then(() => {})

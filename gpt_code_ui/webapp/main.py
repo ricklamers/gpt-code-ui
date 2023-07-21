@@ -25,6 +25,7 @@ openai.api_version = os.environ.get("OPENAI_API_VERSION", "2023-03-15-preview")
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 openai.log = os.getenv("OPENAI_API_LOGLEVEL", "")
 AZURE_OPENAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "")
+OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
 
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -121,7 +122,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
 
     arguments = dict(
         temperature=0.7,
-        headers={'x-api-key': openai.api_key},
+        headers=OPENAI_EXTRA_HEADERS,
         messages=[
             # {"role": "system", "content": system},
             {"role": "user", "content": prompt},

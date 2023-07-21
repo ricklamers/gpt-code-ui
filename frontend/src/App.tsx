@@ -22,7 +22,6 @@ function App() {
       try {
         const response = await fetch(`${Config.WEB_ADDRESS}/models`);
         const json = await response.json();
-        console.log(json);
         setModels(json);
       } catch (e) {
         console.error(e);

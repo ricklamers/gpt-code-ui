@@ -56,7 +56,7 @@ def cleanup_spawned_processes():
                         os.kill(pid, signal.CTRL_BREAK_EVENT)
                     else:
                         os.kill(pid, signal.SIGKILL)
-                    
+
                     # After successful kill, cleanup pid file
                     os.remove(fp)
 

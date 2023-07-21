@@ -7,6 +7,7 @@ import snakemq.message
 
 import gpt_code_ui.kernel_program.config as config
 
+
 def escape_ansi(line):
     ansi_escape = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
     return ansi_escape.sub("", line)
@@ -15,6 +16,7 @@ def escape_ansi(line):
 def send_json(messaging, message, identity):
     message = snakemq.message.Message(json.dumps(message).encode("utf-8"), ttl=600)
     messaging.send_message(identity, message)
+
 
 def init_snakemq(ident, init_type="listen"):
     link = snakemq.link.Link()

@@ -2,7 +2,7 @@ import "./App.css";
 import Input from "./components/Input";
 import Sidebar from "./components/Sidebar";
 import Chat, { WaitingStates } from "./components/Chat";
-import React, { useState } from "react";
+import React, { useState, useEffect  } from "react";
 import Config from "./config";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -14,16 +14,23 @@ export type MessageDict = {
 
 function App() {
   const COMMANDS = ["reset"];
-  const MODELS = [
-    {
-      displayName: "GPT-3.5",
-      name: "gpt-3.5-turbo",
-    },
-    {
-      displayName: "GPT-4",
-      name: "gpt-4",
-    },
-  ];
+
+  let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-3.5-turbo"}]);
+
+  useEffect(() => {
+    const getModels = async () => {
+      try {
+        const response = await fetch(`${Config.WEB_ADDRESS}/models`);
+        const json = await response.json();
+        console.log(json);
+        setModels(json);
+      } catch (e) {
+        console.error(e);
+      };
+    };
+
+    getModels();
+ }, []);
 
   let [selectedModel, setSelectedModel] = useLocalStorage<string>(
     "model",

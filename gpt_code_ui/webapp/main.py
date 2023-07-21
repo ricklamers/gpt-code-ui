@@ -1,7 +1,6 @@
 # The GPT web UI as a template based Flask app
 import os
 import requests
-import json
 import asyncio
 import re
 import logging
@@ -195,6 +194,14 @@ def index():
         print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
 
     return send_from_directory('static', 'index.html')
+
+
+@app.route("/models")
+def models():
+    return jsonify([
+        {"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"},
+        {"displayName": "GPT-4", "name": "gpt-4"},
+    ])
 
 
 @app.route('/api/<path:path>', methods=["GET", "POST"])

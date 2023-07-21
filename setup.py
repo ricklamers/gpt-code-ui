@@ -21,6 +21,7 @@ setup(
         'flask-cors>=3,<4',
         'python-dotenv>=0.18,<2',
         'pandas>=1.3,<2',
+        'openai>=0.25,<1',
     ],
     entry_points={
         'console_scripts': [

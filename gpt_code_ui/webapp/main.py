@@ -6,6 +6,7 @@ import asyncio
 import re
 import logging
 import sys
+import openai
 import pandas as pd
 
 from collections import deque
@@ -18,12 +19,12 @@ from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 
 load_dotenv('.env')
 
-OPENAI_API_TYPE = os.environ.get("OPENAI_API_TYPE", "openai")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
-OPENAI_API_VERSION = os.environ.get("OPENAI_API_VERSION", "2023-03-15-preview")
+openai.api_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
+openai.api_type = os.environ.get("OPENAI_API_TYPE", "openai")
+openai.api_version = os.environ.get("OPENAI_API_VERSION", "2023-03-15-preview")
+openai.api_key = os.environ.get("OPENAI_API_KEY", "")
+openai.log = os.getenv("OPENAI_API_LOGLEVEL", "")
 AZURE_OPENAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "")
-
 
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -114,52 +115,43 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
     
     Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename."""
-    temperature = 0.7
-    message_array = [
-        {
-            "role": "user",
-            "content": prompt,
-        },
-    ]
 
-    final_openai_key = OPENAI_API_KEY
     if user_openai_key:
-        final_openai_key = user_openai_key
+        openai.api_key = user_openai_key
 
-    if OPENAI_API_TYPE == "openai":
-        data = {
-            "model": model,
-            "messages": message_array,
-            "temperature": temperature,
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {final_openai_key}",
-        }
+    arguments = dict(
+        temperature=0.7,
+        headers={'x-api-key': openai.api_key},
+        messages=[
+            # {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+    )
 
-        response = requests.post(
-            f"{OPENAI_BASE_URL}/v1/chat/completions",
-            data=json.dumps(data),
-            headers=headers,
-        )
-    elif OPENAI_API_TYPE == "azure":
-        data = {
-            "messages": message_array,
-            "temperature": temperature,
-        }
-        headers = {
-            "Content-Type": "application/json",
-            "api-key": f"{final_openai_key}",
-        }
-
-        response = requests.post(
-            f"{OPENAI_BASE_URL}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version={OPENAI_API_VERSION}",
-            data=json.dumps(data),
-            headers=headers,
-        )
+    if openai.api_type == 'openai':
+        arguments["model"] = model
+    elif openai.api_type == 'azure':
+        arguments["deployment_id"] = AZURE_OPENAI_DEPLOYMENT
     else:
-        return None, "Error: Invalid OPENAI_PROVIDER", 500
+        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
 
+    try:
+        result_GPT = openai.ChatCompletion.create(**arguments)
+
+        if 'error' in result_GPT:
+            raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
+
+        if result_GPT.choices[0].finish_reason == 'content_filter':
+            raise openai.APIError('Content Filter')
+
+    except openai.OpenAIError as e:
+        return None, f"Error from API: {e}", 500
+
+    try:
+        content = result_GPT.choices[0].message.content
+
+    except AttributeError:
+        return None, f"Malformed answer from API: {content}", 500
 
     def extract_code(text):
         # Match triple backtick blocks first
@@ -179,11 +171,6 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         text = re.sub(r'`(.+?)`', '', text, flags=re.DOTALL)
         return text.strip()
 
-
-    if response.status_code != 200:
-        return None, "Error: " + response.text, 500
-
-    content = response.json()["choices"][0]["message"]["content"]
     return extract_code(content), extract_non_code(content), 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger

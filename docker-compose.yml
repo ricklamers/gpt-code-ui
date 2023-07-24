@@ -2,7 +2,7 @@ version: "3.8"
 services:
 
   gpt-code-ui:
-    image: ricklamers/gpt-code-ui:0.42.35
+    image: ricklamers/gpt-code-ui
     environment:
       OPENAI_API_KEY: "YOUR_TOKEN"
       # optional: if you want to use Azure API

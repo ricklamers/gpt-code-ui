@@ -4,6 +4,7 @@ import VoiceChatIcon from "@mui/icons-material/VoiceChat";
 import PersonIcon from "@mui/icons-material/Person";
 import { MessageDict } from "../App";
 
+import remarkGfm from 'remark-gfm';
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { RefObject } from "react";
 import ReactMarkdown from 'react-markdown';
@@ -17,7 +18,7 @@ function Message(props: {
   let { text, role } = props;
 
   const isMarkdown = (input: string) => {
-    const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*/g;
+    const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*|\|.*\|/g;
     return mdRegex.test(input);
   }
 
@@ -45,7 +46,10 @@ function Message(props: {
             </div>
           ) : (
             isMarkdown(text) ? 
-            <ReactMarkdown children={text} /> : 
+            <ReactMarkdown
+            children={text}
+            remarkPlugins={[remarkGfm]}
+            /> :
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
 

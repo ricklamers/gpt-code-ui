@@ -1,6 +1,6 @@
 FROM alpine:3.18 as base
 RUN apk add --no-cache git
-WORKDIR /app
+WORKDIR /app/gpt-code-ui/
 COPY . .
 
 FROM node:20-alpine as frontend

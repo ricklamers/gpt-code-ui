@@ -57,7 +57,17 @@ gptcode
 ```
 
 ### Docker
-[localagi](https://github.com/localagi) took the effort of bundling the Python package in a Docker container. Check it out here: [gpt-code-ui-docker](https://github.com/localagi/gpt-code-ui-docker).
+
+You can download docker images use command:
+
+```bash
+docker pull ricklamers/gpt-code-ui
+# or specified tag
+docker pull ricklamers/gpt-code-ui:0.42.35
+```
+
+- (*There is a problem with the mirror, to be updated*) [localagi](https://github.com/localagi) took the effort of bundling the Python package in a Docker container. Check it out here: [gpt-code-ui-docker](https://github.com/localagi/gpt-code-ui-docker).
+- [soulteary](https://github.com/soulteary) A new solution is provided, which provides the basic image of GPT Code UI. You can perform secondary packaging based on the image and add the software you need. Check it out her: [https://github.com/soulteary/docker-code-interpreter](https://github.com/soulteary/docker-code-interpreter).
 
 ## Contributing
 Please do and have a look at the [contributions guide](.github/CONTRIBUTING.md)! This should be a community initiative. I'll try my best to be responsive.

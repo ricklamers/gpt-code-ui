@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+
+  gpt-code-ui:
+    image: ricklamers/gpt-code-ui:0.42.35
+    environment:
+      OPENAI_API_KEY: "YOUR_TOKEN"
+      # optional: if you want to use Azure API
+      # OPENAI_API_TYPE: "YOUR_TOKEN_TYPE"
+      # OPENAI_BASE_URL: "https://YOUR_DOMAIN.openai.azure.com/"
+      # OPENAI_API_VERSION: 2023-03-15-preview
+      # AZURE_OPENAI_DEPLOYMENT: "gpt-35-turbo"
+      API_PORT: 5010
+      WEB_PORT: 8080
+      SNAKEMQ_PORT: 8765
+      APP_HOST: "0.0.0.0"
+      # optional: if you want to use proxy
+      # HTTPS_PROXY: "http://host.docker.internal:1234"
+    ports:
+      - "8080:8080"

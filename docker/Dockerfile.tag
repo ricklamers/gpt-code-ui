@@ -18,7 +18,7 @@ RUN pip3 install --upgrade pip wheel
 COPY --from=base /app/gpt-code-ui /app
 WORKDIR /app
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-RUN pip install Flask==2.3.2 Flask-Cors==3.0.10 requests==2.31.0 snakeMQ==1.6 ipykernel==6.23.1 python-dotenv==1.0.0 pandas==1.5.3
+RUN pip install -r requirements.txt
 COPY --from=frontend /app/gpt-code-ui/frontend/dist /app/gpt_code_ui/webapp/static
 RUN python3 setup.py sdist bdist_wheel && \
     python3 setup.py install && \

@@ -9,8 +9,6 @@ import sys
 import openai
 import pandas as pd
 
-from collections import deque
-
 from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response
 from dotenv import load_dotenv
@@ -40,25 +38,56 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
 
 
-class LimitedLengthString:
-    def __init__(self, maxlen=2000):
-        self.data = deque()
-        self.len = 0
-        self.maxlen = maxlen
+class ChatHistory():
+    def __init__(self):
+        self._buffer = list()
 
-    def append(self, string):
-        self.data.append(string)
-        self.len += len(string)
-        while self.len > self.maxlen:
-            popped = self.data.popleft()
-            self.len -= len(popped)
+        self.append(
+            "system",
+            """Write Python code, in a triple backtick Markdown code block, that answers the user prompts.
 
-    def get_string(self):
-        result = ''.join(self.data)
-        return result[-self.maxlen:]
+Notes:
+    Do not use your own knowledge to answer the user prompt. Instead, focus on generating Python code for doing so.
+    First, think step by step what you want to do and write it down in English.
+    Then generate valid Python code in a single code block.
+    Do not add commands to install packages.
+    Make sure all code is valid - it will e run in a Jupyter Python 3 kernel environment.
+    Define every variable before you use it.
+    For data processing, you can use
+        'numpy', # numpy==1.24.3
+        'dateparser' #dateparser==1.1.8
+        'pandas', # matplotlib==1.5.3
+        'geopandas' # geopandas==0.13.2
+        'tabulate' # tabulate==0.9.0
+    For pdf extraction, you can use
+        'PyPDF2', # PyPDF2==3.0.1
+        'pdfminer', # pdfminer==20191125
+        'pdfplumber', # pdfplumber==0.9.0
+    For data visualization, you can use
+        'matplotlib', # matplotlib==3.7.1
+    Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+    If the user requests to generate a table, produce code that prints a markdown table.
+    If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
+
+If the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.""")
+
+    def append(self, role: str, content: str):
+        if role not in ("user", "assistant", "system"):
+            raise ValueError(f"Invalid role: {role}")
+
+        self._buffer.append({
+            "role": role,
+            "content": content,
+        })
+
+    def upload_file(self, filename: str, file_info: str = None):
+        self.append("user", f"In the following, I will refer to the file {filename}.\n{file_info}")
+
+    def __call__(self):
+        return self._buffer
 
 
-message_buffer = LimitedLengthString()
+chat_history = ChatHistory()
 
 
 def allowed_file(filename):
@@ -92,36 +121,7 @@ def inspect_file(filename: str) -> str:
         return ''  # file reading failed. - Don't want to know why.
 
 
-async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
-
-    prompt = f"""First, here is a history of what I asked you to do earlier.
-The actual prompt follows after ENDOFHISTORY.
-History:
-{message_buffer.get_string()}
-ENDOFHISTORY.
-Write Python code, in a triple backtick Markdown code block, that does the following:
-{user_prompt}
-
-Notes:
-    First, think step by step what you want to do and write it down in English.
-    Then generate valid Python code in a code block
-    Make sure all code is valid - it be run in a Jupyter Python 3 kernel environment.
-    Define every variable before you use it.
-    For data munging, you can use
-        'numpy', # numpy==1.24.3
-        'dateparser' #dateparser==1.1.8
-        'pandas', # matplotlib==1.5.3
-        'geopandas' # geopandas==0.13.2
-    For pdf extraction, you can use
-        'PyPDF2', # PyPDF2==3.0.1
-        'pdfminer', # pdfminer==20191125
-        'pdfplumber', # pdfplumber==0.9.0
-    For data visualization, you can use
-        'matplotlib', # matplotlib==3.7.1
-    Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
-    If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-
-Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename."""
+async def get_code(messages, user_openai_key=None, model="gpt-3.5-turbo"):
 
     if user_openai_key:
         openai.api_key = user_openai_key
@@ -129,10 +129,7 @@ Teacher mode: if the code modifies or produces a file, at the end of the code bl
     arguments = dict(
         temperature=0.7,
         headers=OPENAI_EXTRA_HEADERS,
-        messages=[
-            # {"role": "system", "content": system},
-            {"role": "user", "content": prompt},
-        ]
+        messages=messages,
     )
 
     if openai.api_type == 'open_ai':
@@ -233,16 +230,6 @@ def download_file():
     return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
 
 
-@app.route('/inject-context', methods=['POST'])
-def inject_context():
-    user_prompt = request.json.get('prompt', '')
-
-    # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
-
-    return jsonify({"result": "success"})
-
-
 @app.route('/generate', methods=['POST'])
 def generate_code():
     user_prompt = request.json.get('prompt', '')
@@ -252,12 +239,14 @@ def generate_code():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
+    chat_history.append("user", user_prompt)
+
     code, text, status = loop.run_until_complete(
-        get_code(user_prompt, user_openai_key, model))
+        get_code(chat_history(), user_openai_key, model))
     loop.close()
 
-    # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
+    if status == 200:
+        chat_history.append("assistant", text)
 
     return jsonify({'code': code, 'text': text}), status
 
@@ -276,6 +265,7 @@ def upload_file():
         file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_target)
         file_info = inspect_file(file_target)
+        chat_history.upload_file(file.filename, file_info)
         return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
     else:
         return jsonify({'error': 'File type not allowed'}), 400

@@ -22,7 +22,7 @@ release:
 compile_frontend:
 	cd frontend && \
 	npm install && \
-	npm run build && \
+	VITE_APP_VERSION=$$(grep -e "^\s*version='[^']*'" ../setup.py | cut -d "'" -f 2) npm run build && \
 	find ../gpt_code_ui/webapp/static -mindepth 1 ! -name '.gitignore' -delete && \
 	rsync -av dist/ ../gpt_code_ui/webapp/static
 

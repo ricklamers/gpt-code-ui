@@ -19,14 +19,11 @@ from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 
 load_dotenv('.env')
 
-openai.api_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
-openai.api_type = os.environ.get("OPENAI_API_TYPE", "openai")
 openai.api_version = os.environ.get("OPENAI_API_VERSION")
-openai.api_key = os.environ.get("OPENAI_API_KEY", "")
-openai.log = os.getenv("OPENAI_API_LOGLEVEL", "")
+openai.log = os.getenv("OPENAI_API_LOGLEVEL")
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
 
-if openai.api_type == "openai":
+if openai.api_type == "open_ai":
     AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))
 elif openai.api_type == "azure":
     try:
@@ -138,7 +135,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         ]
     )
 
-    if openai.api_type == 'openai':
+    if openai.api_type == 'open_ai':
         arguments["model"] = model
     elif openai.api_type == 'azure':
         arguments["deployment_id"] = model

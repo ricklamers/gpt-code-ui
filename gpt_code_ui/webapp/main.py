@@ -21,7 +21,7 @@ load_dotenv('.env')
 
 openai.api_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com")
 openai.api_type = os.environ.get("OPENAI_API_TYPE", "openai")
-openai.api_version = os.environ.get("OPENAI_API_VERSION", "2023-03-15-preview")
+openai.api_version = os.environ.get("OPENAI_API_VERSION")
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 openai.log = os.getenv("OPENAI_API_LOGLEVEL", "")
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))

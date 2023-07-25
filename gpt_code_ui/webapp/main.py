@@ -1,8 +1,8 @@
 # The GPT web UI as a template based Flask app
 import os
 import requests
-import json
 import asyncio
+import json
 import re
 import logging
 import sys
@@ -24,8 +24,17 @@ openai.api_type = os.environ.get("OPENAI_API_TYPE", "openai")
 openai.api_version = os.environ.get("OPENAI_API_VERSION", "2023-03-15-preview")
 openai.api_key = os.environ.get("OPENAI_API_KEY", "")
 openai.log = os.getenv("OPENAI_API_LOGLEVEL", "")
-AZURE_OPENAI_DEPLOYMENT = os.environ.get("AZURE_OPENAI_DEPLOYMENT", "")
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
+
+if openai.api_type == "openai":
+    AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))
+elif openai.api_type == "azure":
+    try:
+        AVAILABLE_MODELS = json.loads(os.environ["AZURE_OPENAI_DEPLOYMENTS"])
+    except KeyError as e:
+        raise RuntimeError('AZURE_OPENAI_DEPLOYMENTS environment variable not set') from e
+else:
+    raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -132,7 +141,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
     if openai.api_type == 'openai':
         arguments["model"] = model
     elif openai.api_type == 'azure':
-        arguments["deployment_id"] = AZURE_OPENAI_DEPLOYMENT
+        arguments["deployment_id"] = model
     else:
         return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
 
@@ -195,6 +204,11 @@ def index():
         print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
 
     return send_from_directory('static', 'index.html')
+
+
+@app.route("/models")
+def models():
+    return jsonify(AVAILABLE_MODELS)
 
 
 @app.route('/api/<path:path>', methods=["GET", "POST"])

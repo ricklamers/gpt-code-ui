@@ -133,8 +133,12 @@ function App() {
         return;
       }
       
-      submitCode(code);
-      setWaitingForSystem(WaitingStates.RunningCode);
+      if (!!code) {
+        submitCode(code);
+        setWaitingForSystem(WaitingStates.RunningCode);
+      } else {
+        setWaitingForSystem(WaitingStates.Idle);
+      }
     } catch (error) {
       console.error(
         "There has been a problem with your fetch operation:",

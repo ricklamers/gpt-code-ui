@@ -83,6 +83,12 @@ If the code modifies or produces a file, at the end of the code block insert a p
     def upload_file(self, filename: str, file_info: str = None):
         self.append("user", f"In the following, I will refer to the file {filename}.\n{file_info}")
 
+    def add_execution_result(self, result: str):
+        self.append("user", f"Executing this code yielded the following output:\n{result}")
+
+    def add_error(self, message: str):
+        self.append("user", f"Executing this code lead to an error.\nThe error message reads:\n{message}")
+
     def __call__(self):
         return self._buffer
 
@@ -205,6 +211,15 @@ def proxy_kernel_manager(path):
             f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
     else:
         resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
+
+    # store execution results in conversation history to allow back-references by the user
+    for res in json.loads(resp.content).get('results', []):
+        if res['type'] == "message":
+            chat_history.add_execution_result(res['value'])
+        elif res['type'] == "message_error":
+            chat_history.add_error(res['value'])
+
+        print(res)
 
     excluded_headers = ['content-encoding',
                         'content-length', 'transfer-encoding', 'connection']

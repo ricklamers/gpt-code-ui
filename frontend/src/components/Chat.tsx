@@ -39,7 +39,7 @@ function Message(props: {
           </div>
         )}
 
-        {props.type == "message" &&
+        {["message", "message_status"].indexOf(props.type) !== -1 &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}
@@ -53,7 +53,7 @@ function Message(props: {
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
 
-        {(props.type == "message_raw") &&
+        {(["message_raw", "message_error"].indexOf(props.type) !== -1) &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}
@@ -61,7 +61,7 @@ function Message(props: {
           ) : (
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
-        
+
         {props.type == "image/png" &&
           <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/png;base64,${text}' />` }}></div>
         }

@@ -30,15 +30,6 @@ function Message(props: {
         </div>
       </div>
       <div className="message-body">
-        {props.type == "code" && (
-          <div>
-            I generated the following code:
-            <SyntaxHighlighter wrapLongLines={true} language="python">
-              {text}
-            </SyntaxHighlighter>
-          </div>
-        )}
-
         {props.type == "message" &&
           (props.showLoader ? (
             <div>

@@ -72,7 +72,25 @@ function Message(props: {
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
 
-        {(["message_raw", "message_error"].indexOf(props.type) !== -1) &&
+        {props.type == "message_error" &&
+          (props.showLoader ? (
+            <div>
+              {text} {props.showLoader ? <div className="loader"></div> : null}
+            </div>
+          ) : (
+            <div>
+              Execution Error:
+              <SyntaxHighlighter
+                {...props}
+                children={text}
+                wrapLongLines={true}
+                language={"python"}
+                PreTag="div"
+              />
+            </div>
+          ))}
+
+        {props.type == "message_raw" &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}

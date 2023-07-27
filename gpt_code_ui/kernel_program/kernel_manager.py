@@ -57,7 +57,7 @@ def cleanup_spawned_processes():
                         os.kill(pid, signal.CTRL_BREAK_EVENT)
                     else:
                         os.kill(pid, signal.SIGKILL)
-                    
+
                     # After successful kill, cleanup pid file
                     os.remove(fp)
 
@@ -217,11 +217,8 @@ def start_kernel(id: str):
         cwd=kernel_dir,
         env=kernel_env,
     )
-    # Write PID for caller to kill
-    str_kernel_pid = str(kernel_process.pid)
-    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
-    with open(os.path.join(config.KERNEL_PID_DIR, str_kernel_pid + ".pid"), "w") as p:
-        p.write("kernel")
+
+    utils.store_pid(kernel_process.pid, "kernel")
 
     # Wait for kernel connection file to be written
     while True:

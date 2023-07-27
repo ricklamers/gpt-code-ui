@@ -33,7 +33,7 @@ elif openai.api_type == "azure":
 else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 
-UPLOAD_FOLDER = 'workspace/'
+UPLOAD_FOLDER = 'kernel.workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -119,6 +119,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         For data visualization, you can use
             'matplotlib', # matplotlib==3.7.1
         Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+        If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.
         If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
     
     Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename."""
@@ -237,7 +238,7 @@ def download_file():
     file = request.args.get('file')
     # from `workspace/` send the file
     # make sure to set required headers to make it download the file
-    return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
+    return send_from_directory(os.path.join(os.getcwd(), 'kernel.workspace'), file, as_attachment=True)
 
 
 @app.route('/inject-context', methods=['POST'])

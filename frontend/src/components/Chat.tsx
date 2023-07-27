@@ -75,6 +75,7 @@ function Message(props: {
 
 
 export enum WaitingStates {
+  StartingKernel = "Starting Kernel",
   GeneratingCode = "Generating code",
   RunningCode = "Running code",
   UploadingFile = "Uploading file",

@@ -9,7 +9,6 @@ import signal
 import pathlib
 import threading
 import time
-import atexit
 import traceback
 
 from time import sleep
@@ -201,6 +200,7 @@ def start_kernel(id: str):
         "pdfminer>=20191125,<20191200",
         "pdfplumber>=0.9,<0.10",
         "matplotlib>=3.7,<3.8",
+        "openpyxl>=3.1.2,<4",
     ]
     subprocess.run([kernel_python_executable, '-m', 'pip', 'install'] + default_packages)
 
@@ -244,9 +244,14 @@ def start_kernel(id: str):
 
 
 if __name__ == "__main__":
-    kc, kernel_dir = start_kernel(id='ffa907c8-1908-49e3-974b-c0c27cbac6e4')  # This is just a random but fixed ID for now - to be prepared for later multi-kernel scenarios
+    try:
+        kernel_id = sys.argv[1]
+    except IndexError as e:
+        logger.exception('Missing kernel ID command line parameter', e)
+    else:
+        kc, kernel_dir = start_kernel(id=kernel_id)
 
-    # make sure the dir with the virtualenv will be deleted after kernel termination
-    atexit.register(lambda: shutil.rmtree(kernel_dir, ignore_errors=True))
+        # make sure the dir with the virtualenv will be deleted after kernel termination
+        atexit.register(lambda: shutil.rmtree(kernel_dir, ignore_errors=True))
 
-    start_snakemq(kc)
+        start_snakemq(kc)

@@ -47,15 +47,18 @@ cli.show_server_banner = lambda *x: None
 app = Flask(__name__)
 CORS(app)
 
+
 def start_kernel_manager():
     global kernel_manager_process
 
     kernel_manager_script_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "kernel_manager.py"
     )
-    kernel_manager_process = subprocess.Popen(
-        [sys.executable, kernel_manager_script_path]
-    )
+    kernel_manager_process = subprocess.Popen([
+        sys.executable,
+        kernel_manager_script_path,
+        'workspace',  # This will be used as part of the folder name for the workspace and to create the venv inside. Can be anything, but using 'workspace' makes file up-/download very simple
+    ])
 
     # Write PID as <pid>.pid to config.KERNEL_PID_DIR
     os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)

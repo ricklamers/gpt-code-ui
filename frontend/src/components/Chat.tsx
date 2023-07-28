@@ -30,15 +30,6 @@ function Message(props: {
         </div>
       </div>
       <div className="message-body">
-        {props.type == "code" && (
-          <div>
-            I generated the following code:
-            <SyntaxHighlighter wrapLongLines={true} language="python">
-              {text}
-            </SyntaxHighlighter>
-          </div>
-        )}
-
         {props.type == "message" &&
           (props.showLoader ? (
             <div>
@@ -46,10 +37,29 @@ function Message(props: {
             </div>
           ) : (
             isMarkdown(text) ? 
-            <ReactMarkdown
-            children={text}
-            remarkPlugins={[remarkGfm]}
-            /> :
+              <ReactMarkdown
+              children={text}
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({node, inline, className, children, style, ...props}) {
+                  const match = /language-(\w+)/.exec(className || '')
+                  return !inline ? (
+                    <SyntaxHighlighter
+                      {...props}
+                      children={String(children).replace(/\n$/, '')}
+                      wrapLongLines={true}
+                      language={match ? match[1] : "python"}
+                      PreTag="div"
+                    />
+                  ) : (
+                    <code {...props} className={className}>
+                      {children}
+                    </code>
+                  )
+                }
+              }}
+            />
+          :
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
 

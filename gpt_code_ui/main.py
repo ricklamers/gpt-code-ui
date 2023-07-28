@@ -16,19 +16,22 @@ from gpt_code_ui.kernel_program.main import main as kernel_program_main, cleanup
 
 APP_URL = "http://localhost:%s" % APP_PORT
 
+
 def run_webapp():
     try:
         app.run(host="0.0.0.0", port=APP_PORT, use_reloader=False)
-    except Exception as e:
-        logging.exception("Error running the webapp:")
+    except Exception:
+        logging.exception("Error running the webapp")
         sys.exit(1)
+
 
 def run_kernel_program():
     try:
         asyncio.run(kernel_program_main())
-    except Exception as e:
-        logging.exception("Error running the kernel_program:")
+    except Exception:
+        logging.exception("Error running the kernel_program")
         sys.exit(1)
+
 
 def setup_logging():
     log_format = "%(asctime)s [%(levelname)s]: %(message)s"
@@ -38,32 +41,33 @@ def setup_logging():
     file_handler.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(file_handler)
 
+
 def print_color(text, color="gray"):
     # Default to gray
-    code="242"
+    code = "242"
 
     if color == "green":
-        code="35"
-    
+        code = "35"
+
     gray_code = "\033[38;5;%sm" % code
     reset_code = "\033[0m"
     print(f"{gray_code}{text}{reset_code}")
 
 
 def print_banner():
-        
-        print("""
+    print("""
 █▀▀ █▀█ ▀█▀ ▄▄ █▀▀ █▀█ █▀▄ █▀▀
 █▄█ █▀▀ ░█░ ░░ █▄▄ █▄█ █▄▀ ██▄
-        """)
+    """)
 
-        print("> Open GPT-Code UI in your browser %s" % APP_URL)
-        print("")
-        print("You can inspect detailed logs in app.log.")
-        print("")
-        print("Find your OpenAI API key at https://platform.openai.com/account/api-keys")
-        print("")
-        print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")   
+    print("> Open GPT-Code UI in your browser %s" % APP_URL)
+    print("")
+    print("You can inspect detailed logs in app.log.")
+    print("")
+    print("Find your OpenAI API key at https://platform.openai.com/account/api-keys")
+    print("")
+    print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")
+
 
 def main():
     setup_logging()
@@ -80,20 +84,19 @@ def main():
             try:
                 app.test_client().get("/")
                 break
-            except:
+            except Exception:
                 time.sleep(0.1)
-        
-        print_banner()    
-        
+
+        print_banner()
+
         webbrowser.open(APP_URL)
 
         webapp_process.join()
         kernel_program_process.join()
 
-        
     except KeyboardInterrupt:
         print("Terminating processes...")
-        
+
         cleanup_kernel_program()
         kernel_program_process.terminate()
 
@@ -103,6 +106,7 @@ def main():
         kernel_program_process.join()
 
         print("Processes terminated.")
-        
+
+
 if __name__ == '__main__':
     main()

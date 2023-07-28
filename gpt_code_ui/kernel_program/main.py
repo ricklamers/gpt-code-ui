@@ -62,6 +62,7 @@ def start_kernel_manager():
     utils.store_pid(kernel_manager_process.pid, "kernel_manager")
 
 
+
 def cleanup_kernel_program():
     kernel_manager.cleanup_spawned_processes()
 
@@ -79,10 +80,10 @@ async def start_snakemq():
                 logger.debug("Kernel is ready.")
                 result_queue.put({
                     "value": "Kernel is ready.",
-                    "type": "message"
+                    "type": "message_status"
                 })
 
-        elif message["type"] in ["message", "message_raw", "image/png", "image/jpeg"]:
+        elif message["type"] in ["message", "message_raw", "message_error", "image/png", "image/jpeg"]:
             # TODO: 1:1 kernel <> channel mapping
             logger.debug("%s of type %s" % (message["value"], message["type"]))
 

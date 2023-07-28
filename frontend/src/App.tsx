@@ -53,7 +53,7 @@ function App() {
     ])
   );
   let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
-    WaitingStates.Idle
+    WaitingStates.StartingKernel
   );
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -78,6 +78,7 @@ function App() {
   const handleCommand = (command: string) => {
     if (command == "reset") {
       addMessage({ text: "Restarting the kernel.", type: "message", role: "system" });
+      setWaitingForSystem(WaitingStates.StartingKernel);
 
       fetch(`${Config.API_ADDRESS}/restart`, {
         method: "POST",

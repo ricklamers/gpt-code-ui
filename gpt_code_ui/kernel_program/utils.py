@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import snakemq.link
@@ -29,3 +30,12 @@ def init_snakemq(ident, init_type="listen"):
     else:
         raise Exception("Unsupported init type.")
     return messaging, link
+
+
+def store_pid(pid: int, process_name: str):
+    '''
+    Write PID as <pid>.pid to config.KERNEL_PID_DIR
+    '''
+    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
+    with open(os.path.join(config.KERNEL_PID_DIR, f"{pid}.pid"), "w") as p:
+        p.write(process_name)

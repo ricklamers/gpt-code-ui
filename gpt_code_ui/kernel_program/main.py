@@ -53,14 +53,14 @@ def start_kernel_manager():
     kernel_manager_script_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "kernel_manager.py"
     )
-    kernel_manager_process = subprocess.Popen(
-        [sys.executable, kernel_manager_script_path]
-    )
+    kernel_manager_process = subprocess.Popen([
+        sys.executable,
+        kernel_manager_script_path,
+        'workspace',  # This will be used as part of the folder name for the workspace and to create the venv inside. Can be anything, but using 'workspace' makes file up-/download very simple
+    ])
 
-    # Write PID as <pid>.pid to config.KERNEL_PID_DIR
-    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
-    with open(os.path.join(config.KERNEL_PID_DIR, "%d.pid" % kernel_manager_process.pid), "w") as p:
-        p.write("kernel_manager")
+    utils.store_pid(kernel_manager_process.pid, "kernel_manager")
+
 
 
 def cleanup_kernel_program():

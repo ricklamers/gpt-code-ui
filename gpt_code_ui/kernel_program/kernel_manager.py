@@ -1,13 +1,14 @@
 import sys
 import subprocess
 import os
+import shutil
+import atexit
 import queue
 import json
 import signal
 import pathlib
 import threading
 import time
-import atexit
 import traceback
 
 from time import sleep
@@ -167,58 +168,87 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
         logger.debug(f"{e} [{type(e)}")
 
 
-def start_kernel():
-    kernel_connection_file = os.path.join(os.getcwd(), "kernel_connection_file.json")
+def start_kernel(id: str):
+    cwd = pathlib.Path(os.getcwd())
+    kernel_dir = cwd / f'kernel.{id}'
+    kernel_venv = kernel_dir / 'venv'
+    kernel_venv_bindir = kernel_venv / 'bin'
+    kernel_python_executable = kernel_venv_bindir / os.path.basename(sys.executable)
+    kernel_connection_file = kernel_dir / "kernel_connection_file.json"
+    launch_kernel_script_path = pathlib.Path(__file__).parent.resolve() / "launch_kernel.py"
+    kernel_env = os.environ.copy()
+    kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
 
-    if os.path.isfile(kernel_connection_file):
-        os.remove(kernel_connection_file)
-    if os.path.isdir(kernel_connection_file):
-        os.rmdir(kernel_connection_file)
+    # Cleanup potential leftovers
+    shutil.rmtree(kernel_dir, ignore_errors=True)
 
-    launch_kernel_script_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), "launch_kernel.py"
-    )
+    os.makedirs(kernel_dir)
 
-    os.makedirs('workspace/', exist_ok=True)
+    # create virtual env inside kernel_venv directory
+    subprocess.run([sys.executable, '-m', 'venv', kernel_venv, '--upgrade-deps', '--system-site-packages'])
+    # install wheel because some packages do not like being installed without
+    subprocess.run([kernel_python_executable, '-m', 'pip', 'install', 'wheel>=0.41,<1.0'])
+    # install all default packages into the venv
+    default_packages = [
+        "ipykernel>=6,<7",
+        "numpy>=1.24,<1.25",
+        "dateparser>=1.1,<1.2",
+        "pandas>=1.5,<1.6",
+        "geopandas>=0.13,<0.14",
+        "tabulate>=0.9.0<1.0",
+        "PyPDF2>=3.0,<3.1",
+        "pdfminer>=20191125,<20191200",
+        "pdfplumber>=0.9,<0.10",
+        "matplotlib>=3.7,<3.8",
+        "openpyxl>=3.1.2,<4",
+    ]
+    subprocess.run([kernel_python_executable, '-m', 'pip', 'install'] + default_packages)
 
+    # start the kernel using the virtual env python executable
     kernel_process = subprocess.Popen(
         [
-            sys.executable,
+            kernel_python_executable,
             launch_kernel_script_path,
             "--IPKernelApp.connection_file",
             kernel_connection_file,
             "--matplotlib=inline",
             "--quiet",
         ],
-        cwd='workspace/'
+        cwd=kernel_dir,
+        env=kernel_env,
     )
-    # Write PID for caller to kill
-    str_kernel_pid = str(kernel_process.pid)
-    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
-    with open(os.path.join(config.KERNEL_PID_DIR, str_kernel_pid + ".pid"), "w") as p:
-        p.write("kernel")
+
+    utils.store_pid(kernel_process.pid, "kernel")
 
     # Wait for kernel connection file to be written
     while True:
-        if not os.path.isfile(kernel_connection_file):
+        try:
+            with open(kernel_connection_file, 'r') as fp:
+                json.load(fp)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Either file was not yet there or incomplete (then JSON parsing failed)
             sleep(0.1)
+            pass
         else:
-            # Keep looping if JSON parsing fails, file may be partially written
-            try:
-                with open(kernel_connection_file, 'r') as fp:
-                    json.load(fp)
-                break
-            except json.JSONDecodeError:
-                pass
+            break
 
     # Client
-    kc = BlockingKernelClient(connection_file=kernel_connection_file)
+    kc = BlockingKernelClient(connection_file=str(kernel_connection_file))
     kc.load_connection_file()
     kc.start_channels()
     kc.wait_for_ready()
-    return kc
+    return kc, kernel_dir
 
 
 if __name__ == "__main__":
-    kc = start_kernel()
-    start_snakemq(kc)
+    try:
+        kernel_id = sys.argv[1]
+    except IndexError as e:
+        logger.exception('Missing kernel ID command line parameter', e)
+    else:
+        kc, kernel_dir = start_kernel(id=kernel_id)
+
+        # make sure the dir with the virtualenv will be deleted after kernel termination
+        atexit.register(lambda: shutil.rmtree(kernel_dir, ignore_errors=True))
+
+        start_snakemq(kc)

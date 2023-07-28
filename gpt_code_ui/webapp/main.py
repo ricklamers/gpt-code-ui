@@ -31,7 +31,7 @@ elif openai.api_type == "azure":
 else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 
-UPLOAD_FOLDER = 'workspace/'
+UPLOAD_FOLDER = 'kernel.workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -174,14 +174,7 @@ async def get_code(messages, user_openai_key=None, model="gpt-3.5-turbo"):
             if single_match:
                 return single_match.group(1).strip()
 
-    def extract_non_code(text):
-        # Replace triple backtick blocks
-        text = re.sub(r'```(?:\w+\n)?(.+?)```', '', text, flags=re.DOTALL)
-        # Replace single backtick blocks
-        text = re.sub(r'`(.+?)`', '', text, flags=re.DOTALL)
-        return text.strip()
-
-    return extract_code(content), extract_non_code(content), 200
+    return extract_code(content), content.strip(), 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
@@ -249,7 +242,7 @@ def download_file():
     file = request.args.get('file')
     # from `workspace/` send the file
     # make sure to set required headers to make it download the file
-    return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
+    return send_from_directory(os.path.join(os.getcwd(), 'kernel.workspace'), file, as_attachment=True)
 
 
 @app.route('/generate', methods=['POST'])

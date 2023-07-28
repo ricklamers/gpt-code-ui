@@ -4,6 +4,7 @@
 
 # Program related
 process_pids/
+kernel.*
 kernel_connection_file.json
 
 # Python stuff

@@ -2,6 +2,8 @@ import "./Chat.css";
 
 import VoiceChatIcon from "@mui/icons-material/VoiceChat";
 import PersonIcon from "@mui/icons-material/Person";
+import TerminalIcon from '@mui/icons-material/Terminal';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { MessageDict } from "../App";
 
 import remarkGfm from 'remark-gfm';
@@ -20,36 +22,53 @@ function Message(props: {
   const isMarkdown = (input: string) => {
     const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*|\|.*\|/g;
     return mdRegex.test(input);
-  }
+  };
+
+  let ICONS = {
+    "upload": <FileUploadIcon />,
+    "generator":  <VoiceChatIcon />,
+    "system": <TerminalIcon />,
+    "user": <PersonIcon />,
+  };
 
   return (
-    <div className={"message " + (role == "system" ? "system" : "user")}>
+    <div className={"message " + role}>
       <div className="avatar-holder">
         <div className="avatar">
-          {role == "system" ? <VoiceChatIcon /> : <PersonIcon />}
+          { ICONS[role as keyof typeof ICONS] }
         </div>
       </div>
       <div className="message-body">
-        {props.type == "code" && (
-          <div>
-            I generated the following code:
-            <SyntaxHighlighter wrapLongLines={true} language="python">
-              {text}
-            </SyntaxHighlighter>
-          </div>
-        )}
-
-        {["message", "message_status"].indexOf(props.type) !== -1 &&
+        {props.type == "message" &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}
             </div>
           ) : (
             isMarkdown(text) ? 
-            <ReactMarkdown
-            children={text}
-            remarkPlugins={[remarkGfm]}
-            /> :
+              <ReactMarkdown
+              children={text}
+              remarkPlugins={[remarkGfm]}
+              components={{
+                code({node, inline, className, children, style, ...props}) {
+                  const match = /language-(\w+)/.exec(className || '')
+                  return !inline ? (
+                    <SyntaxHighlighter
+                      {...props}
+                      children={String(children).replace(/\n$/, '')}
+                      wrapLongLines={true}
+                      language={match ? match[1] : "python"}
+                      PreTag="div"
+                    />
+                  ) : (
+                    <code {...props} className={className}>
+                      {children}
+                    </code>
+                  )
+                }
+              }}
+            />
+          :
             <div className="cell-output" dangerouslySetInnerHTML={{ __html: text }}></div>
           ))}
 
@@ -93,6 +112,7 @@ function Message(props: {
 
 
 export enum WaitingStates {
+  StartingKernel = "Starting Kernel",
   GeneratingCode = "Generating code",
   RunningCode = "Running code",
   UploadingFile = "Uploading file",

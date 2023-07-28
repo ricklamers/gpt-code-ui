@@ -47,13 +47,13 @@ function App() {
       },
       {
         text: "If I get stuck just type 'reset' and I'll restart the kernel.",
-        role: "system",
+        role: "generator",
         type: "message",
       },
     ])
   );
   let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
-    WaitingStates.Idle
+    WaitingStates.StartingKernel
   );
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -77,11 +77,8 @@ function App() {
 
   const handleCommand = (command: string) => {
     if (command == "reset") {
-      addMessage({
-        text: "Restarting the kernel.",
-        type: "message",
-        role: "system",
-      });
+      addMessage({ text: "Restarting the kernel.", type: "message", role: "system" });
+      setWaitingForSystem(WaitingStates.StartingKernel);
 
       fetch(`${Config.API_ADDRESS}/restart`, {
         method: "POST",
@@ -121,21 +118,22 @@ function App() {
         }),
       });
 
-      
-
       const data = await response.json();
       const code = data.code;
 
-      addMessage({ text: code, type: "code", role: "system" });
-      addMessage({ text: data.text, type: "message", role: "system" });
+      addMessage({ text: data.text, type: "message", role: "generator" });
 
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);
         return;
       }
       
-      submitCode(code);
-      setWaitingForSystem(WaitingStates.RunningCode);
+      if (!!code) {
+        submitCode(code);
+        setWaitingForSystem(WaitingStates.RunningCode);
+      } else {
+        setWaitingForSystem(WaitingStates.Idle);
+      }
     } catch (error) {
       console.error(
         "There has been a problem with your fetch operation:",
@@ -162,12 +160,7 @@ function App() {
   }
 
   function completeUpload(message: string) {
-    addMessage({
-      text: message,
-      type: "message",
-      role: "system",
-    });
-
+    addMessage({ text: message, type: "message", role: "upload" });
     setWaitingForSystem(WaitingStates.Idle);
   }
 

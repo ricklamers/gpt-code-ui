@@ -126,7 +126,6 @@ function App() {
       const data = await response.json();
       const code = data.code;
 
-      addMessage({ text: code, type: "code", role: "system" });
       addMessage({ text: data.text, type: "message", role: "system" });
 
       if (response.status != 200) {

@@ -2,6 +2,8 @@ import "./Chat.css";
 
 import VoiceChatIcon from "@mui/icons-material/VoiceChat";
 import PersonIcon from "@mui/icons-material/Person";
+import TerminalIcon from '@mui/icons-material/Terminal';
+import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { MessageDict } from "../App";
 
 import remarkGfm from 'remark-gfm';
@@ -20,13 +22,20 @@ function Message(props: {
   const isMarkdown = (input: string) => {
     const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*|\|.*\|/g;
     return mdRegex.test(input);
-  }
+  };
+
+  let ICONS = {
+    "upload": <FileUploadIcon />,
+    "generator":  <VoiceChatIcon />,
+    "system": <TerminalIcon />,
+    "user": <PersonIcon />,
+  };
 
   return (
-    <div className={"message " + (role == "system" ? "system" : "user")}>
+    <div className={"message " + role}>
       <div className="avatar-holder">
         <div className="avatar">
-          {role == "system" ? <VoiceChatIcon /> : <PersonIcon />}
+          { ICONS[role as keyof typeof ICONS] }
         </div>
       </div>
       <div className="message-body">

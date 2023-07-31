@@ -20,6 +20,8 @@ load_dotenv('.env')
 import gpt_code_ui.kernel_program.utils as utils
 import gpt_code_ui.kernel_program.config as config
 
+USE_SEPARATE_VENV = False
+
 # Set up globals
 messaging = None
 logger = config.get_logger()
@@ -171,38 +173,42 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
 def start_kernel(id: str):
     cwd = pathlib.Path(os.getcwd())
     kernel_dir = cwd / f'kernel.{id}'
-    kernel_venv = kernel_dir / 'venv'
-    kernel_venv_bindir = kernel_venv / 'bin'
-    kernel_python_executable = kernel_venv_bindir / os.path.basename(sys.executable)
-    kernel_connection_file = kernel_dir / "kernel_connection_file.json"
-    launch_kernel_script_path = pathlib.Path(__file__).parent.resolve() / "launch_kernel.py"
-    kernel_env = os.environ.copy()
-    kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
 
     # Cleanup potential leftovers
     shutil.rmtree(kernel_dir, ignore_errors=True)
-
     os.makedirs(kernel_dir)
 
-    # create virtual env inside kernel_venv directory
-    subprocess.run([sys.executable, '-m', 'venv', kernel_venv, '--upgrade-deps', '--system-site-packages'])
-    # install wheel because some packages do not like being installed without
-    subprocess.run([kernel_python_executable, '-m', 'pip', 'install', 'wheel>=0.41,<1.0'])
-    # install all default packages into the venv
-    default_packages = [
-        "ipykernel>=6,<7",
-        "numpy>=1.24,<1.25",
-        "dateparser>=1.1,<1.2",
-        "pandas>=1.5,<1.6",
-        "geopandas>=0.13,<0.14",
-        "tabulate>=0.9.0<1.0",
-        "PyPDF2>=3.0,<3.1",
-        "pdfminer>=20191125,<20191200",
-        "pdfplumber>=0.9,<0.10",
-        "matplotlib>=3.7,<3.8",
-        "openpyxl>=3.1.2,<4",
-    ]
-    subprocess.run([kernel_python_executable, '-m', 'pip', 'install'] + default_packages)
+    kernel_env = os.environ.copy()
+    kernel_connection_file = kernel_dir / "kernel_connection_file.json"
+    launch_kernel_script_path = pathlib.Path(__file__).parent.resolve() / "launch_kernel.py"
+
+    if not USE_SEPARATE_VENV:
+        kernel_python_executable = sys.executable  # TODO: here we could also pick up an already existing env by simply selecting the corresponding Python binary
+    else:
+        kernel_venv = kernel_dir / 'venv'
+        kernel_venv_bindir = kernel_venv / 'bin'
+        kernel_python_executable = kernel_venv_bindir / os.path.basename(sys.executable)
+        kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
+
+        # create virtual env inside kernel_venv directory
+        subprocess.run([sys.executable, '-m', 'venv', kernel_venv, '--upgrade-deps', '--system-site-packages'])
+        # install wheel because some packages do not like being installed without
+        subprocess.run([kernel_python_executable, '-m', 'pip', 'install', 'wheel>=0.41,<1.0'])
+        # install all default packages into the venv
+        default_packages = [
+            "ipykernel>=6,<7",
+            "numpy>=1.24,<1.25",
+            "dateparser>=1.1,<1.2",
+            "pandas>=1.5,<1.6",
+            "geopandas>=0.13,<0.14",
+            "tabulate>=0.9.0<1.0",
+            "PyPDF2>=3.0,<3.1",
+            "pdfminer>=20191125,<20191200",
+            "pdfplumber>=0.9,<0.10",
+            "matplotlib>=3.7,<3.8",
+            "openpyxl>=3.1.2,<4",
+        ]
+        subprocess.run([kernel_python_executable, '-m', 'pip', 'install'] + default_packages)
 
     # start the kernel using the virtual env python executable
     kernel_process = subprocess.Popen(

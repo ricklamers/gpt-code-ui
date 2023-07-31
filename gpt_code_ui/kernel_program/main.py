@@ -62,7 +62,6 @@ def start_kernel_manager():
     utils.store_pid(kernel_manager_process.pid, "kernel_manager")
 
 
-
 def cleanup_kernel_program():
     kernel_manager.cleanup_spawned_processes()
 

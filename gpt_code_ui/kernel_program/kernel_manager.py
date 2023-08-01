@@ -130,29 +130,27 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
         while True:
             try:
                 msg = kc.get_iopub_msg(timeout=timeout)
-                if msg["msg_type"] == "execute_result":
-                    if "text/plain" in msg["content"]["data"]:
-                        send_message(
-                            msg["content"]["data"]["text/plain"], "message_raw"
-                        )
-                if msg["msg_type"] == "display_data":
-                    if "image/png" in msg["content"]["data"]:
-                        # Convert to Slack upload
-                        send_message(
-                            msg["content"]["data"]["image/png"],
-                            message_type="image/png",
-                        )
-                    elif "text/plain" in msg["content"]["data"]:
-                        send_message(msg["content"]["data"]["text/plain"])
+                msg_type = msg["msg_type"]
+                msg_content = msg["content"]
 
-                elif msg["msg_type"] == "stream":
-                    logger.debug("Received stream output %s" % msg["content"]["text"])
-                    send_message(msg["content"]["text"])
-                elif msg["msg_type"] == "error":
-                    send_message(
-                        utils.escape_ansi("\n".join(msg["content"]["traceback"])),
-                        "message_error",
-                    )
+                logger.debug(f'Received "{msg_type}" output: {msg_content}')
+
+                if msg_type in ("execute_result", "display_data"):
+                    content_data = msg_content["data"]
+
+                    if "image/png" in content_data:
+                        send_message(content_data["image/png"], message_type="image/png")
+                    elif "image/jpeg" in content_data:
+                        send_message(content_data["image/jpeg"], message_type="image/jpeg")
+                    elif "text/plain" in content_data:
+                        send_message(content_data["text/plain"], "message_raw" if msg_type == "execute_result" else "message")
+
+                elif msg_type == "stream":
+                    send_message(msg_content["text"])
+
+                elif msg_type == "error":
+                    send_message(utils.escape_ansi("\n".join(msg_content["traceback"])), "message_error")
+
             except queue.Empty:
                 hit_empty += 1
                 if hit_empty == tries:

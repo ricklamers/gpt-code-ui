@@ -138,7 +138,10 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
     if openai.api_type == 'open_ai':
         arguments["model"] = model
     elif openai.api_type == 'azure':
-        arguments["deployment_id"] = model
+        try:
+            arguments["engine"] = [i for i in AVAILABLE_MODELS if i['name'] == model][0]['deployment']
+        except IndexError:
+            raise ValueError(f'no matched name in AVAILABLE_MODELS: {AVAILABLE_MODELS}')
     else:
         return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
 

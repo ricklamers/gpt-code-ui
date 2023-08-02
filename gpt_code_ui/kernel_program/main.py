@@ -7,7 +7,6 @@ import logging
 import time
 
 import asyncio
-import json
 import threading
 
 from queue import Queue
@@ -47,23 +46,25 @@ cli.show_server_banner = lambda *x: None
 app = Flask(__name__)
 CORS(app)
 
+
 def start_kernel_manager():
     global kernel_manager_process
 
     kernel_manager_script_path = os.path.join(
         pathlib.Path(__file__).parent.resolve(), "kernel_manager.py"
     )
-    kernel_manager_process = subprocess.Popen(
-        [sys.executable, kernel_manager_script_path]
-    )
+    kernel_manager_process = subprocess.Popen([
+        sys.executable,
+        kernel_manager_script_path,
+        'workspace',  # This will be used as part of the folder name for the workspace and to create the venv inside. Can be anything, but using 'workspace' makes file up-/download very simple
+    ])
 
-    # Write PID as <pid>.pid to config.KERNEL_PID_DIR
-    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
-    with open(os.path.join(config.KERNEL_PID_DIR, "%d.pid" % kernel_manager_process.pid), "w") as p:
-        p.write("kernel_manager")
+    utils.store_pid(kernel_manager_process.pid, "kernel_manager")
+
 
 def cleanup_kernel_program():
     kernel_manager.cleanup_spawned_processes()
+
 
 async def start_snakemq():
     global messaging
@@ -77,7 +78,7 @@ async def start_snakemq():
             if message["value"] == "ready":
                 logger.debug("Kernel is ready.")
                 result_queue.put({
-                    "value":"Kernel is ready.",
+                    "value": "Kernel is ready.",
                     "type": "message"
                 })
 
@@ -97,8 +98,9 @@ async def start_snakemq():
         while True:
             if send_queue.qsize() > 0:
                 message = send_queue.get()
-                utils.send_json(messaging, 
-                    {"type": "execute", "value": message["command"]}, 
+                utils.send_json(
+                    messaging,
+                    {"type": "execute", "value": message["command"]},
                     config.IDENT_KERNEL_MANAGER
                 )
             time.sleep(0.1)
@@ -117,7 +119,7 @@ async def start_snakemq():
 
 @app.route("/api", methods=["POST", "GET"])
 def handle_request():
-   
+
     if request.method == "GET":
         # Handle GET requests by sending everything that's in the receive_queue
         results = [result_queue.get() for _ in range(result_queue.qsize())]
@@ -128,7 +130,8 @@ def handle_request():
         send_queue.put(data)
 
         return jsonify({"result": "success"})
-    
+
+
 @app.route("/restart", methods=["POST"])
 def handle_restart():
 
@@ -152,9 +155,6 @@ async def main():
 def run_flask_app():
     app.run(host="0.0.0.0", port=APP_PORT)
 
+
 if __name__ == "__main__":
     asyncio.run(main())
-
-
-
-    

@@ -1,14 +1,16 @@
 import sys
 import subprocess
 import os
+import shutil
+import atexit
 import queue
 import json
 import signal
 import pathlib
 import threading
 import time
-import atexit
 import traceback
+import venv
 
 from time import sleep
 from jupyter_client import BlockingKernelClient
@@ -56,7 +58,7 @@ def cleanup_spawned_processes():
                         os.kill(pid, signal.CTRL_BREAK_EVENT)
                     else:
                         os.kill(pid, signal.SIGKILL)
-                    
+
                     # After successful kill, cleanup pid file
                     os.remove(fp)
 
@@ -128,29 +130,27 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
         while True:
             try:
                 msg = kc.get_iopub_msg(timeout=timeout)
-                if msg["msg_type"] == "execute_result":
-                    if "text/plain" in msg["content"]["data"]:
-                        send_message(
-                            msg["content"]["data"]["text/plain"], "message_raw"
-                        )
-                if msg["msg_type"] == "display_data":
-                    if "image/png" in msg["content"]["data"]:
-                        # Convert to Slack upload
-                        send_message(
-                            msg["content"]["data"]["image/png"],
-                            message_type="image/png",
-                        )
-                    elif "text/plain" in msg["content"]["data"]:
-                        send_message(msg["content"]["data"]["text/plain"])
+                msg_type = msg["msg_type"]
+                msg_content = msg["content"]
 
-                elif msg["msg_type"] == "stream":
-                    logger.debug("Received stream output %s" % msg["content"]["text"])
-                    send_message(msg["content"]["text"])
-                elif msg["msg_type"] == "error":
-                    send_message(
-                        utils.escape_ansi("\n".join(msg["content"]["traceback"])),
-                        "message_raw",
-                    )
+                logger.debug(f'Received "{msg_type}" output: {msg_content}')
+
+                if msg_type in ("execute_result", "display_data"):
+                    content_data = msg_content["data"]
+
+                    if "image/png" in content_data:
+                        send_message(content_data["image/png"], message_type="image/png")
+                    elif "image/jpeg" in content_data:
+                        send_message(content_data["image/jpeg"], message_type="image/jpeg")
+                    elif "text/plain" in content_data:
+                        send_message(content_data["text/plain"], "message_raw" if msg_type == "execute_result" else "message")
+
+                elif msg_type == "stream":
+                    send_message(msg_content["text"])
+
+                elif msg_type == "error":
+                    send_message(utils.escape_ansi("\n".join(msg["content"]["traceback"])), "message_error")
+
             except queue.Empty:
                 hit_empty += 1
                 if hit_empty == tries:
@@ -167,58 +167,116 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
         logger.debug(f"{e} [{type(e)}")
 
 
-def start_kernel():
-    kernel_connection_file = os.path.join(os.getcwd(), "kernel_connection_file.json")
+def create_venv(venv_dir: pathlib.Path, install_default_packages: bool) -> pathlib.Path:
+    venv_bindir = venv_dir / 'bin'
+    venv_python_executable = venv_bindir / os.path.basename(sys.executable)
 
-    if os.path.isfile(kernel_connection_file):
-        os.remove(kernel_connection_file)
-    if os.path.isdir(kernel_connection_file):
-        os.rmdir(kernel_connection_file)
+    if not os.path.isdir(venv_dir):
+        # create virtual env inside venv_dir directory
+        venv.create(venv_dir, system_site_packages=True, with_pip=True, upgrade_deps=True)
 
-    launch_kernel_script_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), "launch_kernel.py"
-    )
+        if install_default_packages:
+            # install wheel because some packages do not like being installed without
+            subprocess.run([venv_python_executable, '-m', 'pip', 'install', 'wheel>=0.41,<1.0'])
+            # install all default packages into the venv
+            default_packages = [
+                "ipykernel>=6,<7",
+                "numpy>=1.24,<1.25",
+                "dateparser>=1.1,<1.2",
+                "pandas>=1.5,<1.6",
+                "geopandas>=0.13,<0.14",
+                "tabulate>=0.9.0<1.0",
+                "PyPDF2>=3.0,<3.1",
+                "pdfminer>=20191125,<20191200",
+                "pdfplumber>=0.9,<0.10",
+                "matplotlib>=3.7,<3.8",
+                "openpyxl>=3.1.2,<4",
+            ]
+            subprocess.run([venv_python_executable, '-m', 'pip', 'install'] + default_packages)
 
-    os.makedirs('workspace/', exist_ok=True)
+    # get base env library path as we need this to refer to this form a derived venv
+    site_packages = subprocess.check_output([venv_python_executable, '-c', 'import sysconfig; print(sysconfig.get_paths()["purelib"])'])
+    site_packages = site_packages.decode('utf-8').split('\n')[0]
 
+    return pathlib.Path(site_packages)
+
+
+def create_derived_venv(base_venv: pathlib.Path, venv_dir: pathlib.Path):
+    site_packages_base = create_venv(base_venv, install_default_packages=True)
+    site_packages_derived = create_venv(venv_dir, install_default_packages=False)
+
+    # create a link from derived venv into the base venv, see https://stackoverflow.com/a/75545634
+    with open(site_packages_derived / '_base_packages.pth', 'w') as pth:
+        pth.write(f'{site_packages_base}\n')
+
+    venv_bindir = venv_dir / 'bin'
+    venv_python_executable = venv_bindir / os.path.basename(sys.executable)
+
+    return venv_bindir, venv_python_executable
+
+
+def start_kernel(id: str):
+    cwd = pathlib.Path(os.getcwd())
+    kernel_dir = cwd / f'kernel.{id}'
+    base_dir = cwd / 'kernel.base'
+
+    # Cleanup potential leftovers
+    shutil.rmtree(kernel_dir, ignore_errors=True)
+    os.makedirs(kernel_dir)
+
+    kernel_env = os.environ.copy()
+    kernel_connection_file = kernel_dir / "kernel_connection_file.json"
+    launch_kernel_script_path = pathlib.Path(__file__).parent.resolve() / "launch_kernel.py"
+
+    kernel_venv_dir = kernel_dir / 'venv'
+    kernel_venv_bindir, kernel_python_executable = create_derived_venv(base_dir, kernel_venv_dir)
+    kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
+
+    # start the kernel using the virtual env python executable
     kernel_process = subprocess.Popen(
         [
-            sys.executable,
+            kernel_python_executable,
             launch_kernel_script_path,
             "--IPKernelApp.connection_file",
             kernel_connection_file,
             "--matplotlib=inline",
             "--quiet",
         ],
-        cwd='workspace/'
+        cwd=kernel_dir,
+        env=kernel_env,
     )
-    # Write PID for caller to kill
-    str_kernel_pid = str(kernel_process.pid)
-    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
-    with open(os.path.join(config.KERNEL_PID_DIR, str_kernel_pid + ".pid"), "w") as p:
-        p.write("kernel")
+
+    utils.store_pid(kernel_process.pid, "kernel")
 
     # Wait for kernel connection file to be written
     while True:
-        if not os.path.isfile(kernel_connection_file):
+        try:
+            with open(kernel_connection_file, 'r') as fp:
+                json.load(fp)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Either file was not yet there or incomplete (then JSON parsing failed)
             sleep(0.1)
+            pass
         else:
-            # Keep looping if JSON parsing fails, file may be partially written
-            try:
-                with open(kernel_connection_file, 'r') as fp:
-                    json.load(fp)
-                break
-            except json.JSONDecodeError:
-                pass
+            break
 
     # Client
-    kc = BlockingKernelClient(connection_file=kernel_connection_file)
+    kc = BlockingKernelClient(connection_file=str(kernel_connection_file))
     kc.load_connection_file()
     kc.start_channels()
     kc.wait_for_ready()
-    return kc
+    return kc, kernel_dir
 
 
 if __name__ == "__main__":
-    kc = start_kernel()
-    start_snakemq(kc)
+    try:
+        kernel_id = sys.argv[1]
+    except IndexError as e:
+        logger.exception('Missing kernel ID command line parameter', e)
+    else:
+        kc, kernel_dir = start_kernel(id=kernel_id)
+
+        # make sure the dir with the virtualenv will be deleted after kernel termination
+        atexit.register(lambda: shutil.rmtree(kernel_dir, ignore_errors=True))
+
+        start_snakemq(kc)

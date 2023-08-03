@@ -90,7 +90,7 @@ function Message(props: {
             </div>
           ))}
 
-        {props.type == "message_raw" &&
+        {["message_raw", "message_status"].includes(props.type) &&
           (props.showLoader ? (
             <div>
               {text} {props.showLoader ? <div className="loader"></div> : null}

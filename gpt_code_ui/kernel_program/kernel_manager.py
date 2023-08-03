@@ -56,7 +56,7 @@ def cleanup_spawned_processes():
                         os.kill(pid, signal.CTRL_BREAK_EVENT)
                     else:
                         os.kill(pid, signal.SIGKILL)
-                    
+
                     # After successful kill, cleanup pid file
                     os.remove(fp)
 
@@ -149,7 +149,7 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
                 elif msg["msg_type"] == "error":
                     send_message(
                         utils.escape_ansi("\n".join(msg["content"]["traceback"])),
-                        "message_raw",
+                        "message_error",
                     )
             except queue.Empty:
                 hit_empty += 1

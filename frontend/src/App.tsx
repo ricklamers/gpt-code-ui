@@ -41,7 +41,7 @@ function App() {
   let [messages, setMessages] = useState<Array<MessageDict>>(
     Array.from([
       {
-        text: "Hello! I'm a GPT Code assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
+        text: "Hello! I am a GPT Code assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
         role: "generator",
         type: "message",
       },
@@ -161,19 +161,6 @@ function App() {
   function completeUpload(message: string) {
     addMessage({ text: message, type: "message", role: "upload" });
     setWaitingForSystem(WaitingStates.Idle);
-
-    // Inform prompt server
-    fetch(`${Config.WEB_ADDRESS}/inject-context`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt: message,
-      }),
-    })
-      .then(() => {})
-      .catch((error) => console.error("Error:", error));
   }
 
   function startUpload(_: string) {

@@ -42,7 +42,7 @@ class ChatHistory():
     def __init__(self):
         self._buffer = list()
 
-        self.append(
+        self._append(
             "system",
             """Write Python code, in a triple backtick Markdown code block, that answers the user prompts.
 
@@ -71,23 +71,37 @@ Notes:
 
 If the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.""")
 
-    def append(self, role: str, content: str):
+    def _append(self, role: str, content: str, name: str = None):
         if role not in ("user", "assistant", "system"):
             raise ValueError(f"Invalid role: {role}")
 
-        self._buffer.append({
-            "role": role,
-            "content": content,
-        })
+        entry = {"role": role, "content": content}
+        if name is not None:
+            entry["name"] = name
+
+        self._buffer.append(entry)
+
+    def _truncate(self, s: str, maxlines: int = 10) -> str:
+        return '\n'.join(s.splitlines()[:maxlines])
+
+    def add_prompt(self, prompt: str):
+        self._append("user", prompt)
+
+    def add_answer(self, answer: str):
+        self._append("assistant", answer)
 
     def upload_file(self, filename: str, file_info: str = None):
-        self.append("user", f"In the following, I will refer to the file {filename}.\n{file_info}")
+        self._append("user", f"In the following, I will refer to the file {filename}.\n{file_info}")
 
     def add_execution_result(self, result: str):
-        self.append("user", f"Executing this code yielded the following output:\n{result}")
+        self._append(
+            "user",
+            f"These are the first lines of the output generated when executing the code:\n{self._truncate(result)}")
 
     def add_error(self, message: str):
-        self.append("user", f"Executing this code lead to an error.\nThe error message reads:\n{message}")
+        self._append(
+            "user",
+            f"Executing this code lead to an error.\nThe first lines of the error message read:\n{self._truncate(message)}")
 
     def __call__(self):
         return self._buffer
@@ -254,14 +268,14 @@ def generate_code():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    chat_history.append("user", user_prompt)
+    chat_history.add_prompt(user_prompt)
 
     code, text, status = loop.run_until_complete(
         get_code(chat_history(), user_openai_key, model))
     loop.close()
 
     if status == 200:
-        chat_history.append("assistant", text)
+        chat_history.add_answer(text)
 
     return jsonify({'code': code, 'text': text}), status
 

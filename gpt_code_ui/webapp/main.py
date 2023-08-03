@@ -10,7 +10,7 @@ import openai
 import pandas as pd
 
 from flask_cors import CORS
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory, Response, session
 from dotenv import load_dotenv
 
 from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
@@ -31,6 +31,7 @@ elif openai.api_type == "azure":
 else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 
+SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 UPLOAD_FOLDER = 'kernel.workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -200,6 +201,7 @@ cli.show_server_banner = lambda *x: None
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = SESSION_ENCRYPTION_KEY
 
 CORS(app)
 

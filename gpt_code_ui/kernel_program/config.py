@@ -1,8 +1,7 @@
 import logging
 import os
 
-IDENT_KERNEL_MANAGER = "kernel_manager"
-IDENT_MAIN = "main"
+IDENT_MAIN = "kernel_program.main"
 KERNEL_PID_DIR = "process_pids"
 SNAKEMQ_PORT = int(os.environ.get("SNAKEMQ_PORT", 8765))
 

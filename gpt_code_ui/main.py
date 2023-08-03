@@ -12,7 +12,7 @@ import webbrowser
 from multiprocessing import Process
 
 from gpt_code_ui.webapp.main import app, APP_PORT
-from gpt_code_ui.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
+from gpt_code_ui.kernel_program.main import main as kernel_program_main
 
 APP_URL = "http://localhost:%s" % APP_PORT
 
@@ -97,7 +97,6 @@ def main():
     except KeyboardInterrupt:
         print("Terminating processes...")
 
-        cleanup_kernel_program()
         kernel_program_process.terminate()
 
         webapp_process.terminate()

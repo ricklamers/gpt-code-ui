@@ -5,6 +5,7 @@ import pathlib
 import json
 import logging
 import time
+from typing import Dict
 
 import asyncio
 import threading
@@ -12,12 +13,11 @@ import threading
 from queue import Queue
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import the CORS library
+from flask_cors import CORS
 
 from dotenv import load_dotenv
 load_dotenv('.env')
 
-import gpt_code_ui.kernel_program.kernel_manager as kernel_manager
 import gpt_code_ui.kernel_program.config as config
 import gpt_code_ui.kernel_program.utils as utils
 
@@ -27,13 +27,67 @@ APP_PORT = int(os.environ.get("API_PORT", 5010))
 # Get global logger
 logger = config.get_logger()
 
-# Note, only one kernel_manager_process can be active
-kernel_manager_process = None
 
-# Use efficient Python queues to store messages
-result_queue = Queue()
-send_queue = Queue()
+class KernelManager:
+    KERNEL_MANAGER_SCRIPT_PATH = pathlib.Path(__file__).parent.resolve() / 'kernel_manager.py'
 
+    def __init__(self, session_id: str):
+        print(f'Creating kernel {session_id}')
+        self._session_id = session_id
+        self._workdir = pathlib.Path(os.getcwd()) / f'kernel.{self._session_id}'
+        self._result_queue = Queue()
+        self._send_queue = Queue()
+
+        self._result_queue.put({"value": "Starting Kernel...", "type": "message_status"})
+
+        self._process = subprocess.Popen([
+            sys.executable,
+            KernelManager.KERNEL_MANAGER_SCRIPT_PATH,
+            self._session_id,
+            self._workdir,
+        ])
+
+    def __del__(self):
+        print(f'Killing kernel {self._session_id}')
+        self._process.terminate()
+
+    def on_recv(self, message):
+        if message["type"] == "status":
+            message["type"] = "message_status"
+
+            if message["value"] == "ready":
+                message["value"] = "Kernel is ready."
+            else:
+                raise ValueError(f'Unexpected status_message {message["value"]}')
+
+        elif message["type"] in ["message", "message_raw", "message_error", "image/png", "image/jpeg"]:
+            pass
+
+        else:
+            raise ValueError(f'Unexpected message type {message["type"]}')
+
+        self._result_queue.put({"value": message["value"], "type": message["type"]})
+
+    def execute(self, command):
+        self._send_queue.put({"value": command, "type": "execute"})
+
+    def get_results(self):
+        return [self._result_queue.get() for _ in range(self._result_queue.qsize())]
+
+    def get_messages(self):
+        return [self._send_queue.get() for _ in range(self._send_queue.qsize())]
+
+    @property
+    def workdir(self) -> str:
+        return self._workdir
+
+    @property
+    def session_id(self) -> str:
+        return self._session_id
+
+
+kernel_managers: Dict[str, KernelManager] = dict()
+kernel_managers_lock = threading.Lock()
 messaging = None
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
@@ -47,62 +101,27 @@ app = Flask(__name__)
 CORS(app)
 
 
-def start_kernel_manager():
-    global kernel_manager_process
-
-    kernel_manager_script_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), "kernel_manager.py"
-    )
-    kernel_manager_process = subprocess.Popen([
-        sys.executable,
-        kernel_manager_script_path,
-        'workspace',  # This will be used as part of the folder name for the workspace and to create the venv inside. Can be anything, but using 'workspace' makes file up-/download very simple
-    ])
-
-    utils.store_pid(kernel_manager_process.pid, "kernel_manager")
-
-
-def cleanup_kernel_program():
-    kernel_manager.cleanup_spawned_processes()
-
-
 async def start_snakemq():
+    global kernel_managers
     global messaging
 
     messaging, link = utils.init_snakemq(config.IDENT_MAIN)
 
     def on_recv(conn, ident, message):
+        session_id = ident
         message = json.loads(message.data.decode("utf-8"))
-
-        if message["type"] == "status":
-            if message["value"] == "ready":
-                logger.debug("Kernel is ready.")
-                result_queue.put({
-                    "value": "Kernel is ready.",
-                    "type": "message_status"
-                })
-
-        elif message["type"] in ["message", "message_raw", "message_error", "image/png", "image/jpeg"]:
-            # TODO: 1:1 kernel <> channel mapping
-            logger.debug("%s of type %s" % (message["value"], message["type"]))
-
-            result_queue.put({
-                "value": message["value"],
-                "type": message["type"]
-            })
+        logger.debug(f'{message["value"]} of type {message["type"]} from {session_id}')
+        kernel_managers[session_id].on_recv(message)
 
     messaging.on_message_recv.add(on_recv)
     logger.info("Starting snakemq loop")
 
     def send_queued_messages():
         while True:
-            if send_queue.qsize() > 0:
-                message = send_queue.get()
-                utils.send_json(
-                    messaging,
-                    {"type": "execute", "value": message["command"]},
-                    config.IDENT_KERNEL_MANAGER
-                )
+            for session_id, kernel in kernel_managers.items():
+                for message in kernel.get_messages():
+                    print(f'Sending {message} to {session_id}.')
+                    utils.send_json(messaging, message, session_id)
             time.sleep(0.1)
 
     async def async_send_queued_messages():
@@ -118,32 +137,56 @@ async def start_snakemq():
 
 
 @app.route("/api/<session_id>", methods=["POST", "GET"])
-def handle_request(session_id):
+def handle_request(session_id: str):
+    global kernel_managers
+    if session_id not in kernel_managers:
+        kernel_managers_lock.acquire()
+        try:
+            # while waiting for the lock, the object already might have been created --> check again inside the lock
+            if session_id not in kernel_managers:
+                kernel_managers[session_id] = KernelManager(session_id)
+        finally:
+            kernel_managers_lock.release()
 
     if request.method == "GET":
         # Handle GET requests by sending everything that's in the receive_queue
-        results = [result_queue.get() for _ in range(result_queue.qsize())]
-        return jsonify({"results": results})
+        return jsonify({"results": kernel_managers[session_id].get_results()})
     elif request.method == "POST":
-        data = request.json
-
-        send_queue.put(data)
-
+        kernel_managers[session_id].execute(request.json['command'])
         return jsonify({"result": "success"})
 
 
 @app.route("/restart/<session_id>", methods=["POST"])
 def handle_restart(session_id):
-
-    cleanup_kernel_program()
-    start_kernel_manager()
-
+    global kernel_managers
+    kernel_managers_lock.acquire()
+    try:
+        kernel_managers[session_id] = KernelManager(session_id)
+    finally:
+        kernel_managers_lock.release()
     return jsonify({"result": "success"})
 
 
-async def main():
-    start_kernel_manager()
+@app.route("/shutdown/<session_id>", methods=["POST"])
+def handle_shutdown(session_id):
+    global kernel_managers
+    kernel_managers_lock.acquire()
+    try:
+        del kernel_managers[session_id]
+    finally:
+        kernel_managers_lock.release()
+    return jsonify({"result": "success"})
 
+
+@app.route("/workdir/<session_id>", methods=["GET"])
+def handle_workdir(session_id):
+    try:
+        return jsonify({"result": kernel_managers[session_id].workdir})
+    except KeyError:
+        return jsonify({"result": f'Failed: Kernel {session_id} not found.'})
+
+
+async def main():
     # Run Flask app in a separate thread
     flask_thread = threading.Thread(target=run_flask_app)
     flask_thread.start()

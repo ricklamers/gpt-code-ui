@@ -5,7 +5,6 @@ import shutil
 import atexit
 import queue
 import json
-import signal
 import pathlib
 import threading
 import time
@@ -44,35 +43,10 @@ class FlushingThread(threading.Thread):
             time.sleep(1)
 
 
-def cleanup_spawned_processes():
-    print("Cleaning up kernels...")
-    for filename in os.listdir(config.KERNEL_PID_DIR):
-        fp = os.path.join(config.KERNEL_PID_DIR, filename)
-        if os.path.isfile(fp):
-            try:
-                pid = int(filename.split(".pid")[0])
-                logger.debug("Killing process with pid %s" % pid)
-                os.remove(fp)
-                try:
-                    if os.name == "nt":
-                        os.kill(pid, signal.CTRL_BREAK_EVENT)
-                    else:
-                        os.kill(pid, signal.SIGKILL)
-
-                    # After successful kill, cleanup pid file
-                    os.remove(fp)
-
-                except Exception:
-                    # Windows process killing is flaky
-                    pass
-            except Exception as e:
-                logger.debug(e)
-
-
-def start_snakemq(kc):
+def start_snakemq(kc, kernel_id):
     global messaging
 
-    messaging, link = utils.init_snakemq(config.IDENT_KERNEL_MANAGER, "connect")
+    messaging, link = utils.init_snakemq(kernel_id, "connect")
 
     def on_recv(conn, ident, message):
         if ident == config.IDENT_MAIN:
@@ -215,9 +189,8 @@ def create_derived_venv(base_venv: pathlib.Path, venv_dir: pathlib.Path):
     return venv_bindir, venv_python_executable
 
 
-def start_kernel(id: str):
+def start_kernel(kernel_dir: pathlib.Path):
     cwd = pathlib.Path(os.getcwd())
-    kernel_dir = cwd / f'kernel.{id}'
     base_dir = cwd / 'kernel.base'
 
     # Cleanup potential leftovers
@@ -246,8 +219,6 @@ def start_kernel(id: str):
         env=kernel_env,
     )
 
-    utils.store_pid(kernel_process.pid, "kernel")
-
     # Wait for kernel connection file to be written
     while True:
         try:
@@ -265,18 +236,20 @@ def start_kernel(id: str):
     kc.load_connection_file()
     kc.start_channels()
     kc.wait_for_ready()
-    return kc, kernel_dir
+    return kc, kernel_process
 
 
 if __name__ == "__main__":
     try:
         kernel_id = sys.argv[1]
+        kernel_dir = pathlib.Path(sys.argv[2])
     except IndexError as e:
-        logger.exception('Missing kernel ID command line parameter', e)
+        logger.exception(f'Missing command line parameters.\nUsage:\n\t{sys.argv[0]} <KERNEL ID> <KERNEL WORKDIR>', e)
     else:
-        kc, kernel_dir = start_kernel(id=kernel_id)
+        kc, kernel_process = start_kernel(kernel_dir)
 
         # make sure the dir with the virtualenv will be deleted after kernel termination
         atexit.register(lambda: shutil.rmtree(kernel_dir, ignore_errors=True))
+        atexit.register(lambda: kernel_process.kill())
 
-        start_snakemq(kc)
+        start_snakemq(kc, kernel_id)

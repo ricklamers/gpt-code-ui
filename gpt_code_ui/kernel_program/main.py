@@ -181,9 +181,9 @@ def handle_shutdown(session_id):
 @app.route("/workdir/<session_id>", methods=["GET"])
 def handle_workdir(session_id):
     try:
-        return jsonify({"result": kernel_managers[session_id].workdir})
+        return jsonify({"result": str(kernel_managers[session_id].workdir)})
     except KeyError:
-        return jsonify({"result": f'Failed: Kernel {session_id} not found.'})
+        return jsonify({"error": f'Failed: Kernel {session_id} not found.'}), 404
 
 
 async def main():

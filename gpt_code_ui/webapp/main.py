@@ -262,9 +262,14 @@ def download_file(session_id):
 
     # Get query argument file
     file = request.args.get('file')
-    # from `workspace/` send the file
-    # make sure to set required headers to make it download the file
-    return send_from_directory(os.path.join(os.getcwd(), f'kernel.{session_id}'), file, as_attachment=True)
+    # find out the workspace directory corresponding to the specific session
+    resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/workdir/{session_id}')
+    if resp.status_code == 200:
+        workdir = resp.json()['result']
+    else:
+        return resp, resp.status_code
+
+    return send_from_directory(workdir, file, as_attachment=True)
 
 
 @app.route('/generate', methods=['POST'])
@@ -300,7 +305,14 @@ def upload_file(session_id):
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file and allowed_file(file.filename):
-        file_target = os.path.join(os.getcwd(), f'kernel.{session_id}', file.filename)
+        # find out the workspace directory corresponding to the specific session
+        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/workdir/{session_id}')
+        if resp.status_code == 200:
+            workdir = resp.json()['result']
+        else:
+            return resp, resp.status_code
+
+        file_target = os.path.join(workdir, file.filename)
         file.save(file_target)
         file_info = inspect_file(file_target)
         chat_history[session_id].upload_file(file.filename, file_info)

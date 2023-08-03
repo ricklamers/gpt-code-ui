@@ -8,6 +8,9 @@ import logging
 import sys
 import openai
 import pandas as pd
+import uuid
+from functools import wraps
+from collections import defaultdict
 
 from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response, session
@@ -32,10 +35,6 @@ else:
     raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
 
 SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
-UPLOAD_FOLDER = 'kernel.workspace/'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
 
 
@@ -109,7 +108,7 @@ Notes:
         return self._buffer
 
 
-chat_history = ChatHistory()
+chat_history = defaultdict(ChatHistory)
 
 
 def allowed_file(filename):
@@ -200,19 +199,23 @@ cli = sys.modules['flask.cli']
 cli.show_server_banner = lambda *x: None
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.secret_key = SESSION_ENCRYPTION_KEY
 
 CORS(app)
 
 
+def session_id_required(function_to_protect):
+    @wraps(function_to_protect)
+    def wrapper(*args, **kwargs):
+        if (session_id := session.get('session_id', None)) is None:
+            session_id = str(uuid.uuid4())
+            session['session_id'] = session_id
+        return function_to_protect(session_id, *args, **kwargs)
+    return wrapper
+
+
 @app.route('/')
 def index():
-
-    # Check if index.html exists in the static folder
-    if not os.path.exists(os.path.join(app.root_path, 'static/index.html')):
-        print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
-
     return send_from_directory('static', 'index.html')
 
 
@@ -221,22 +224,28 @@ def models():
     return jsonify(AVAILABLE_MODELS)
 
 
+@app.route('/assets/<path:path>')
+def serve_static(path):
+    return send_from_directory('static/assets/', path)
+
+
 @app.route('/api/<path:path>', methods=["GET", "POST"])
-def proxy_kernel_manager(path):
+@session_id_required
+def proxy_kernel_manager(session_id, path):
     if request.method == "POST":
         resp = requests.post(
-            f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
+            f'http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}', json=request.get_json())
     else:
-        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
+        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}')
 
     # store execution results in conversation history to allow back-references by the user
     for res in json.loads(resp.content).get('results', []):
         if res['type'] == "message":
-            chat_history.add_execution_result(res['value'])
+            chat_history[session_id].add_execution_result(res['value'])
         elif res['type'] == "message_error":
-            chat_history.add_error(res['value'])
+            chat_history[session_id].add_error(res['value'])
 
-        print(res)
+        print(session_id, res)
 
     excluded_headers = ['content-encoding',
                         'content-length', 'transfer-encoding', 'connection']
@@ -247,23 +256,20 @@ def proxy_kernel_manager(path):
     return response
 
 
-@app.route('/assets/<path:path>')
-def serve_static(path):
-    return send_from_directory('static/assets/', path)
-
-
 @app.route('/download')
-def download_file():
+@session_id_required
+def download_file(session_id):
 
     # Get query argument file
     file = request.args.get('file')
     # from `workspace/` send the file
     # make sure to set required headers to make it download the file
-    return send_from_directory(os.path.join(os.getcwd(), 'kernel.workspace'), file, as_attachment=True)
+    return send_from_directory(os.path.join(os.getcwd(), f'kernel.{session_id}'), file, as_attachment=True)
 
 
 @app.route('/generate', methods=['POST'])
-def generate_code():
+@session_id_required
+def generate_code(session_id):
     user_prompt = request.json.get('prompt', '')
     user_openai_key = request.json.get('openAIKey', None)
     model = request.json.get('model', None)
@@ -271,37 +277,41 @@ def generate_code():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    chat_history.add_prompt(user_prompt)
+    chat_history[session_id].add_prompt(user_prompt)
 
     code, text, status = loop.run_until_complete(
-        get_code(chat_history(), user_openai_key, model))
+        get_code(chat_history[session_id](), user_openai_key, model))
     loop.close()
 
     if status == 200:
-        chat_history.add_answer(text)
+        chat_history[session_id].add_answer(text)
 
     return jsonify({'code': code, 'text': text}), status
 
 
 @app.route('/upload', methods=['POST'])
-def upload_file():
+@session_id_required
+def upload_file(session_id):
     # check if the post request has the file part
     if 'file' not in request.files:
         return jsonify({'error': 'No file part in the request'}), 400
     file = request.files['file']
-    # if user does not select file, browser also
-    # submit an empty part without filename
+    # if user does not select file, browser also submit an empty part without filename
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file and allowed_file(file.filename):
-        file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file_target = os.path.join(os.getcwd(), f'kernel.{session_id}', file.filename)
         file.save(file_target)
         file_info = inspect_file(file_target)
-        chat_history.upload_file(file.filename, file_info)
+        chat_history[session_id].upload_file(file.filename, file_info)
         return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)
+    # Check if index.html exists in the static folder
+    if not os.path.exists(os.path.join(app.root_path, 'static/index.html')):
+        raise RuntimeError("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
+    else:
+        app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)

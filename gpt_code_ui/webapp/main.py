@@ -85,7 +85,7 @@ If the code modifies or produces a file, at the end of the code block insert a p
         return '\n'.join(s.splitlines()[:maxlines])
 
     def add_prompt(self, prompt: str):
-        self._append("user", prompt)
+        self._append("user", prompt, "User")
 
     def add_answer(self, answer: str):
         self._append("assistant", answer)
@@ -96,12 +96,14 @@ If the code modifies or produces a file, at the end of the code block insert a p
     def add_execution_result(self, result: str):
         self._append(
             "user",
-            f"These are the first lines of the output generated when executing the code:\n{self._truncate(result)}")
+            f"These are the first lines of the output generated when executing the code:\n{self._truncate(result)}",
+            "Computer")
 
     def add_error(self, message: str):
         self._append(
             "user",
-            f"Executing this code lead to an error.\nThe first lines of the error message read:\n{self._truncate(message)}")
+            f"Executing this code lead to an error.\nThe first lines of the error message read:\n{self._truncate(message)}",
+            "Computer")
 
     def __call__(self):
         return self._buffer

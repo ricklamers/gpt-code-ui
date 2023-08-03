@@ -47,11 +47,9 @@ class ChatHistory():
             """Write Python code, in a triple backtick Markdown code block, that answers the user prompts.
 
 Notes:
-    Do not use your own knowledge to answer the user prompt. Instead, focus on generating Python code for doing so.
     First, think step by step what you want to do and write it down in English.
     Then generate valid Python code in a single code block.
-    Do not add commands to install packages.
-    Make sure all code is valid - it will e run in a Jupyter Python 3 kernel environment.
+    Make sure all code is valid - it will Be run in a Jupyter Python 3 kernel environment.
     Define every variable before you use it.
     For data processing, you can use
         'numpy', # numpy==1.24.3
@@ -66,10 +64,11 @@ Notes:
     For data visualization, you can use
         'matplotlib', # matplotlib==3.7.1
     Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+    If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.
     If the user requests to generate a table, produce code that prints a markdown table.
     If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-
-If the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.""")
+    If the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+    Do not use your own knowledge to answer the user prompt. Instead, focus on generating Python code for doing so.""")
 
     def _append(self, role: str, content: str, name: str = None):
         if role not in ("user", "assistant", "system"):

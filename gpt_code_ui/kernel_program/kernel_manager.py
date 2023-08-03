@@ -191,7 +191,7 @@ def create_derived_venv(base_venv: pathlib.Path, venv_dir: pathlib.Path):
 
 def start_kernel(kernel_dir: pathlib.Path):
     cwd = pathlib.Path(os.getcwd())
-    base_dir = cwd / 'kernel.base'
+    base_dir = cwd / config.BASE_VENV
 
     # Cleanup potential leftovers
     shutil.rmtree(kernel_dir, ignore_errors=True)

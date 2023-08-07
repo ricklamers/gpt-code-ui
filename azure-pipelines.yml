@@ -1,0 +1,122 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - '*'
+      - refs/tags/*
+
+pool:
+  vmImage: ubuntu-20.04
+
+variables:
+  CONDA_CACHE_DIR: /usr/share/miniconda/envs
+  YARN_CACHE_FOLDER: $(Pipeline.Workspace)/.yarn
+  artifactFeed: artifacts                # the name of an Azure artifacts feed
+  public_key: '316a0cff1956611786d2892081c45b6c81c7c8f8c74fc630d0cc125d209a'
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+
+steps:
+- task: PipAuthenticate@0
+  displayName: Authenticate with artifact feed
+  inputs:
+    artifactFeeds: $(artifactFeed)
+    # 'onlyAddExtraIndex' populates PIP_EXTRA_INDEX_URL env variable
+    # https://gist.github.com/noelbundick/0262aa0f37ec3f9a179137c622b6280d
+    onlyAddExtraIndex: True
+
+- task: PythonScript@0
+  displayName: 'Get AWS Credentials'
+  inputs:
+    scriptSource: 'inline'
+    script: |
+      import requests
+      import os
+      import json
+      
+      ado_org = os.getenv("ADO_ORG_URI").replace('https://dev.azure.com/', '').replace('/', '')
+      print(f"{ado_org=}")
+      ado_project = os.getenv("ADO_PROJECT")
+      print(f"{ado_project=}")
+      public_key = os.getenv("PUBLIC_KEY")
+      print(f"{public_key=}")
+      if ado_project == 'factory-appservice-apps-q-nreg-ec1':
+          token_vending_machine_url = f"https://token-vending-machine.apps.qa.uptimize.merckgroup.com/{public_key}"
+      elif ado_project == 'factory-appservice-apps-d-nreg-ec1':
+          token_vending_machine_url = f"https://token-vending-machine.apps.dev.uptimize.merckgroup.com/{public_key}"
+      elif ado_project == 'factory-appservice-apps-p-nreg-ec1':
+          token_vending_machine_url = f"https://token-vending-machine.apps.p.uptimize.merckgroup.com/{public_key}"
+      else:
+          raise ValueError("Parent project unknown.")
+      print(f"{token_vending_machine_url=}")
+      repo_name = os.getenv("REPO_NAME")
+      print(f"{repo_name=}")
+      app_id = repo_name[-20:]
+      print(f"{app_id=}")
+      app_name = repo_name[:-21]
+      print(f"{app_name=}")
+      # https://stackoverflow.com/a/62842832/3652805
+      # remove Local to allow packages from upstream pypi, that are not already present
+      pip_extra_index_url = os.getenv("PIP_EXTRA_INDEX_URL").strip()
+      print(f"{pip_extra_index_url=}")
+
+      response = requests.post(token_vending_machine_url,
+      json={"token": os.getenv("SYSTEM_ACCESSTOKEN"), 
+      "app_id": app_id, 
+      "app_name": app_name, 
+      "ado_org": ado_org,
+      "ado_project": ado_project,
+      "user": os.getenv("BUILD_REQUESTEDFOREMAIL")})
+
+      response.raise_for_status()
+      credentials = response.json()
+
+      print('##vso[task.setvariable variable=AWS_SESSION_TOKEN;isSecret=false]%s' % (credentials['SessionToken']))
+      print('##vso[task.setvariable variable=AWS_ACCESS_KEY_ID;isSecret=false]%s' % (credentials['AccessKeyId']))
+      print('##vso[task.setvariable variable=AWS_SECRET_ACCESS_KEY;isSecret=false]%s' % (credentials['SecretAccessKey']))
+
+      print('##vso[task.setvariable variable=APP_ID;isSecret=false]%s' % (app_id))
+      print('##vso[task.setvariable variable=APP_NAME;isSecret=false]%s' % (app_name))
+      print('##vso[task.setvariable variable=PIP_EXTRA_INDEX_URL_TRIMMED;isSecret=false]%s' % (pip_extra_index_url))
+  env:
+    SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    BUILD_REQUESTEDFOREMAIL: $(Build.RequestedForEmail)
+    PUBLIC_KEY: $(public_key)
+    REPO_NAME: $(Build.Repository.Name)
+    ADO_ORG_URI: $(System.CollectionUri)
+    ADO_PROJECT: $(System.TeamProject)
+
+- bash: echo "##vso[task.prependpath]$CONDA/bin"
+  displayName: Add conda to PATH
+
+- task: AWSShellScript@1
+  inputs:
+    regionName: 'eu-central-1'
+    scriptType: inline
+    inlineScript: |
+      CREDENTIALS=$(aws sts get-caller-identity)
+      AWS_ACCOUNT_ID=$(echo $CREDENTIALS | jq -r .Account)
+      echo "##vso[task.setvariable variable=AWS_ACCOUNT_ID]$AWS_ACCOUNT_ID"
+      aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com
+
+- bash: |
+     docker build \
+      --pull \
+      --cache-from $AWS_ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com/$(APP_ID):main \
+      -f Dockerfile \
+      --build-arg 'INDEX_URL=$(PIP_EXTRA_INDEX_URL_TRIMMED)' \
+      --build-arg BUILDKIT_INLINE_CACHE=1 \
+      -t $AWS_ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com/$(APP_ID):main \
+      .
+  displayName: Build container
+  env:
+    DOCKER_BUILDKIT: '1'
+    BUILDKIT_PROGRESS: 'plain'
+
+- bash: |
+    docker push $AWS_ACCOUNT_ID.dkr.ecr.eu-central-1.amazonaws.com/$(APP_ID):main
+  displayName: Push container (main only)
+  condition: and(succeeded(), eq(variables.isMain, 'true'))

@@ -8,6 +8,8 @@ import logging
 import sys
 import openai
 import pandas as pd
+import litellm 
+from litellm import completion 
 
 from collections import deque
 
@@ -139,11 +141,13 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         arguments["model"] = model
     elif openai.api_type == 'azure':
         arguments["deployment_id"] = model
+    elif model in litellm.model_list: 
+        arguments["model"] = model
     else:
         return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
 
     try:
-        result_GPT = openai.ChatCompletion.create(**arguments)
+        result_GPT = completion(**arguments)
 
         if 'error' in result_GPT:
             raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)

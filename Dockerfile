@@ -20,7 +20,7 @@ COPY README.md ./
 RUN pip install -e .
 
 # Inject frontend into backend resources to be served from there
-COPY --from=uibuild /frontendbuild/frontend/dist/ ./frontend/dist
+COPY --from=uibuild /frontendbuild/frontend/dist/ ./gpt_code_ui/webapp/static
 
 COPY run_with_app_service_config.py ./
 

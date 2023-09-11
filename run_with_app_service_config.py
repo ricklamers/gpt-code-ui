@@ -12,6 +12,12 @@ sub_env = os.environ.copy()
 
 for key, value in config.items():
     if isinstance(value, str):
+        if value.startswith('$'):
+            try:
+                value = os.environ[value[1:]]
+            except KeyError:
+                print(f'Failed to resolve environment variable {value}. Keepting the reference in the env.')
+
         sub_env[key] = value
     elif isinstance(value, int):
         sub_env[key] = str(value)

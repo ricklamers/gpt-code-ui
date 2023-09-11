@@ -63,6 +63,8 @@ Notes:
         'pdfplumber', # pdfplumber==0.9.0
     For data visualization, you can use
         'matplotlib', # matplotlib==3.7.1
+    For chemistry related tasks, you can use
+        'rdkit', # rdkit>=2023.3.3"
     Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
     If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.
     If the user requests to generate a table, produce code that prints a markdown table.

@@ -165,6 +165,7 @@ def create_venv(venv_dir: pathlib.Path, install_default_packages: bool) -> pathl
                 "pdfplumber>=0.9,<0.10",
                 "matplotlib>=3.7,<3.8",
                 "openpyxl>=3.1.2,<4",
+                "rdkit>=2023.3.3",
             ]
             subprocess.run([venv_python_executable, '-m', 'pip', 'install'] + default_packages)
 

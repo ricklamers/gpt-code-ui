@@ -13,7 +13,8 @@ RUN make compile_frontend
 FROM python:3.10-slim as backendbuild
 RUN mkdir backendbuild
 WORKDIR /backendbuild
-RUN pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopandas>=0.13,<0.14" "tabulate>=0.9.0<1.0" "PyPDF2>=3.0,<3.1" "pdfminer>=20191125,<20191200" "pdfplumber>=0.9,<0.10" "matplotlib>=3.7,<3.8"
+RUN pip install --upgrade pip setuptools
+RUN pip install "ipykernel>=6,<7" "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopandas>=0.13,<0.14" "tabulate>=0.9.0<1.0" "PyPDF2>=3.0,<3.1" "pdfminer>=20191125,<20191200" "pdfplumber>=0.9,<0.10" "matplotlib>=3.7,<3.8" "openpyxl>=3.1.2,<4"
 COPY gpt_code_ui/ ./gpt_code_ui
 COPY setup.py ./
 COPY README.md ./

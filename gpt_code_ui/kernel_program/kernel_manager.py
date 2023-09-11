@@ -147,7 +147,7 @@ def create_venv(venv_dir: pathlib.Path, install_default_packages: bool) -> pathl
 
     if not os.path.isdir(venv_dir):
         # create virtual env inside venv_dir directory
-        venv.create(venv_dir, system_site_packages=True, with_pip=True, upgrade_deps=True)
+        venv.create(venv_dir, system_site_packages=True, with_pip=True, upgrade_deps=False)
 
         if install_default_packages:
             # install wheel because some packages do not like being installed without

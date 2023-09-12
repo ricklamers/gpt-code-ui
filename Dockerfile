@@ -11,6 +11,14 @@ RUN make compile_frontend
 
 
 FROM python:3.10-slim as backendbuild
+# runtime binary dependencies
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        libxrender1 \
+    ; \
+    rm -rf /var/lib/apt/lists/*
+
 RUN mkdir backendbuild
 WORKDIR /backendbuild
 RUN pip install --upgrade pip setuptools

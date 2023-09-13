@@ -17,6 +17,7 @@ from flask import Flask, request, jsonify, send_from_directory, Response, sessio
 from dotenv import load_dotenv
 
 from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
+from gpt_code_ui.kernel_program.config import NO_INTERNET_AVAILABLE
 
 load_dotenv('.env')
 
@@ -44,7 +45,7 @@ class ChatHistory():
 
         self._append(
             "system",
-            """Write Python code, in a triple backtick Markdown code block, that answers the user prompts.
+            f"""Write Python code, in a triple backtick Markdown code block, that answers the user prompts.
 
 Notes:
     First, think step by step what you want to do and write it down in English.
@@ -68,7 +69,8 @@ Notes:
     For chemistry related tasks, you can use
         'rdkit', # rdkit>=2023.3.3"
     Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
-    If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.
+    {  'Do not try to install additional packages as no internet connection is available. Do not include any "!pip install PACKAGE" commands.' if NO_INTERNET_AVAILABLE else
+       'If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.'  }
     If the user requests to generate a table, produce code that prints a markdown table.
     If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
     If the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.

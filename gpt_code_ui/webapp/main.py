@@ -55,8 +55,10 @@ Notes:
         'numpy', # numpy==1.24.3
         'dateparser' #dateparser==1.1.8
         'pandas', # matplotlib==1.5.3
-        'geopandas' # geopandas==0.13.2
-        'tabulate' # tabulate==0.9.0
+        'geopandas', # geopandas==0.13.2
+        'tabulate', # tabulate==0.9.0
+        'scipy', # scipy==1.11.1
+        'scikit-learn', # scikit-learn==1.3.0
     For pdf extraction, you can use
         'PyPDF2', # PyPDF2==3.0.1
         'pdfminer', # pdfminer==20191125

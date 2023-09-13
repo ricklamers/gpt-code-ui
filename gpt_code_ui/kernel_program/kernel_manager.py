@@ -147,7 +147,7 @@ def create_venv(venv_dir: pathlib.Path, install_default_packages: bool) -> pathl
 
     if not os.path.isdir(venv_dir):
         # create virtual env inside venv_dir directory
-        venv.create(venv_dir, system_site_packages=True, with_pip=True, upgrade_deps=False)
+        venv.create(venv_dir, system_site_packages=True, with_pip=True, upgrade_deps=True)
 
         if install_default_packages:
             # install wheel because some packages do not like being installed without
@@ -204,9 +204,15 @@ def start_kernel(kernel_dir: pathlib.Path):
     kernel_connection_file = kernel_dir / "kernel_connection_file.json"
     launch_kernel_script_path = pathlib.Path(__file__).parent.resolve() / "launch_kernel.py"
 
-    kernel_venv_dir = kernel_dir / 'venv'
-    kernel_venv_bindir, kernel_python_executable = create_derived_venv(base_dir, kernel_venv_dir)
-    kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
+    if config.NO_INTERNET_AVAILABLE:
+        # cannot install packages, so no need for a dedicated venv
+        kernel_python_executable = sys.executable
+        logger.info(f'Skipped creating kernel venv as there is no internet connection. Using python binary {kernel_python_executable}.')
+    else:
+        kernel_venv_dir = kernel_dir / 'venv'
+        kernel_venv_bindir, kernel_python_executable = create_derived_venv(base_dir, kernel_venv_dir)
+        kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
+        logger.info(f'Created kernel venv at {kernel_venv_dir} with python binary {kernel_python_executable}.')
 
     # start the kernel using the virtual env python executable
     kernel_process = subprocess.Popen(

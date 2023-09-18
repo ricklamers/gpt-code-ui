@@ -6,15 +6,7 @@ export default function Sidebar(props: {
   models: Array<{ name: string; displayName: string }>;
   selectedModel: string;
   onSelectModel: any;
-  setOpenAIKey: any;
-  openAIKey: string;
 }) {
-  const handleOpenAIButtonClick = () => {
-    const key = prompt("Please enter your OpenAI key", props.openAIKey);
-    if (key != null) {
-      props.setOpenAIKey(key);
-    }
-  };
   return (
     <>
       <div className="sidebar">
@@ -40,8 +32,6 @@ export default function Sidebar(props: {
                 );
             })}
             </select>
-            <label>Credentials</label>
-            <button onClick={handleOpenAIButtonClick}>Set OpenAI key</button>
         </div>
       </div>
     </>

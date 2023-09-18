@@ -3,7 +3,7 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color: #213547;
+  color: rgb(15, 105, 175);;
   background-color: #ffffff;
 
   font-synthesis: none;
@@ -15,7 +15,7 @@
 
 a {
   font-weight: 500;
-  color: #000;
+  color: rgb(15, 105, 175);;
   text-decoration: inherit;
 }
 

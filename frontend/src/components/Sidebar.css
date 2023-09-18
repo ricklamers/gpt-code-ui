@@ -1,28 +1,32 @@
 .sidebar {
     min-width: 260px;
-    background: #202123;
+    background: #ffffff;
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 0.75rem;
-    color: #fff;
+    color: rgb(15, 105, 175);
 }
 
 .logo {
     text-align: center;
     font-weight: bold;
     font-size: 1.5rem;
-    margin-top: 1rem
+    margin-top: 1rem;
 }
 
-.github a {
+.github {
     color: #999;
     font-size: 0.8rem;
 }
 
+.github a {
+    color: #999;
+}
+
 a:hover {
-    color: #fff;
+    color: rgb(150, 215, 210);
 }
 
 .logo svg {
@@ -31,6 +35,18 @@ a:hover {
     height: 35px;
     margin-right: 5px;
     margin-bottom: -8px;
+}
+
+.wrapper {
+    overflow:auto;
+}
+
+.header {
+    float: left;
+}
+
+.headline {
+    margin: 0 10px;
 }
 
 .settings {
@@ -42,7 +58,7 @@ button, select {
     padding: 0.8rem;
     border: none;
     border-radius: .25rem;
-    background-color: #333;
+    background-color: rgb(150, 215, 210);
     color: #fff;
 }
 
@@ -53,12 +69,12 @@ select option {
 button {
     cursor: pointer;
     margin-bottom: 0.5rem;
-    background: #74a89b;
+    background: rgb(150, 215, 210);
 }
 
 label {
     font-size: 0.9rem;
-    color: #999;
+    color: rgb(15, 105, 175);
     margin-top: .5rem;
     margin-bottom: .25rem;
 }

@@ -16,4 +16,8 @@
   flex: 1;
   overflow: hidden;
   height: 100vh;
+  background-image: url("../public/assets/mdo_background.svg");
+  background-size: contain;
+  background-position: right bottom;
+  background-repeat: no-repeat;
 }

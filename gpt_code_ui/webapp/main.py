@@ -148,10 +148,7 @@ def inspect_file(filename: str) -> str:
         return ''  # file reading failed. - Don't want to know why.
 
 
-async def get_code(messages, user_openai_key=None, model="gpt-3.5-turbo"):
-
-    if user_openai_key:
-        openai.api_key = user_openai_key
+async def get_code(messages, model="gpt-3.5-turbo"):
 
     arguments = dict(
         temperature=0.7,
@@ -282,7 +279,6 @@ def download_file(session_id):
 @session_id_required
 def generate_code(session_id):
     user_prompt = request.json.get('prompt', '')
-    user_openai_key = request.json.get('openAIKey', None)
     model = request.json.get('model', None)
 
     loop = asyncio.new_event_loop()
@@ -291,7 +287,7 @@ def generate_code(session_id):
     chat_history[session_id].add_prompt(user_prompt)
 
     code, text, status = loop.run_until_complete(
-        get_code(chat_history[session_id](), user_openai_key, model))
+        get_code(chat_history[session_id](), model))
     loop.close()
 
     if status == 200:

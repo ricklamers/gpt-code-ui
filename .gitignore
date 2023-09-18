@@ -22,3 +22,4 @@ __pycache__/
 dist/
 build/
 .app_service_config.json
+.DS_Store

@@ -15,7 +15,7 @@ export type MessageDict = {
 function App() {
   const COMMANDS = ["reset"];
 
-  let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-3.5-turbo-0613"}]);
+  let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-35-turbo-0613"}]);
 
   useEffect(() => {
     const getModels = async () => {

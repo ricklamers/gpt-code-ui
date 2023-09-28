@@ -38,6 +38,7 @@ class KernelManager:
         self._result_queue = Queue()
         self._send_queue = Queue()
 
+        self._status = "starting"
         self._result_queue.put({"value": "Starting Kernel...", "type": "message_status"})
 
         self._process = subprocess.Popen([
@@ -47,18 +48,25 @@ class KernelManager:
             self._workdir,
         ])
 
+    @property
+    def status(self):
+        return self._status
+
     def __del__(self):
         print(f'Killing kernel {self._session_id}')
+        self._status = 'stopping'
         self._process.terminate()
+        self._status = 'stopped'
 
     def on_recv(self, message):
         if message["type"] == "status":
             message["type"] = "message_status"
+            self._status = message["value"]
 
-            if message["value"] == "ready":
+            if self.status == "ready":
                 message["value"] = "Kernel is ready."
             else:
-                raise ValueError(f'Unexpected status_message {message["value"]}')
+                raise ValueError(f'Unexpected status_message {self.status}')
 
         elif message["type"] in ["message", "message_raw", "message_error", "image/png", "image/jpeg"]:
             pass
@@ -150,7 +158,7 @@ def handle_request(session_id: str):
 
     if request.method == "GET":
         # Handle GET requests by sending everything that's in the receive_queue
-        return jsonify({"results": kernel_managers[session_id].get_results()})
+        return jsonify({"results": kernel_managers[session_id].get_results(), "status": kernel_managers[session_id].status})
     elif request.method == "POST":
         kernel_managers[session_id].execute(request.json['command'])
         return jsonify({"result": "success"})

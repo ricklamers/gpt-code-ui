@@ -50,8 +50,9 @@ function App() {
       },
     ])
   );
+
   let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
-    WaitingStates.StartingKernel
+    WaitingStates.Idle
   );
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -76,7 +77,7 @@ function App() {
   const handleCommand = (command: string) => {
     if (command == "reset") {
       addMessage({ text: "Restarting the kernel.", type: "message", role: "system" });
-      setWaitingForSystem(WaitingStates.StartingKernel);
+      setWaitingForSystem(WaitingStates.WaitingForKernel);
 
       fetch(`${Config.API_ADDRESS}/restart`, {
         method: "POST",
@@ -144,16 +145,35 @@ function App() {
       return;
     }
     
-    let response = await fetch(`${Config.API_ADDRESS}/api`);
-    let data = await response.json();
-    data.results.forEach(function (result: {value: string, type: string}) {
-      if (result.value.trim().length == 0) {
-        return;
+    try {
+      let response = await fetch(`${Config.API_ADDRESS}/api`);
+      let data = await response.json();
+
+      if (data.status === "starting") {
+        setWaitingForSystem(WaitingStates.WaitingForKernel);
+      } else if (data.status === "ready") {
+        setWaitingForSystem(WaitingStates.Idle);
+      } else {
+        setWaitingForSystem(WaitingStates.WaitingForKernel);
       }
 
-      addMessage({ text: result.value, type: result.type, role: "system" });
-      setWaitingForSystem(WaitingStates.Idle);
-    });
+      data.results.forEach(function (result: {value: string, type: string}) {
+        if (result.value.trim().length == 0) {
+          return;
+        }
+
+        addMessage({ text: result.value, type: result.type, role: "system" });
+      });
+    } catch (error) {
+      if (error instanceof(TypeError)) {
+        if (waitingForSystem != WaitingStates.WaitingForKernel) {
+          addMessage({ text: "Kernel connection lost.", type: "message", role: "system" })
+          setWaitingForSystem(WaitingStates.WaitingForKernel);
+        }
+      } else {
+        console.log('Error while fetching from api: ' + error);
+      }
+    }
   }
 
   function completeUpload(message: string) {

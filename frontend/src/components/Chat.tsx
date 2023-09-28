@@ -45,7 +45,7 @@ function Message(props: {
               {text} {props.showLoader ? <div className="loader"></div> : null}
             </div>
           ) : (
-            isMarkdown(text) ? 
+            isMarkdown(text) ?
               <ReactMarkdown
               children={text}
               remarkPlugins={[remarkGfm]}
@@ -112,7 +112,7 @@ function Message(props: {
 
 
 export enum WaitingStates {
-  StartingKernel = "Starting Kernel",
+  WaitingForKernel = "Waiting for Kernel connection",
   GeneratingCode = "Generating code",
   RunningCode = "Running code",
   UploadingFile = "Uploading file",

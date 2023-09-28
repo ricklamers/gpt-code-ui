@@ -112,6 +112,7 @@ function Message(props: {
 
 
 export enum WaitingStates {
+  SessionTimeout = "Session timeout. Please reload the page.",
   WaitingForKernel = "Waiting for Kernel connection",
   GeneratingCode = "Generating code",
   RunningCode = "Running code",

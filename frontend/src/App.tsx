@@ -146,28 +146,33 @@ function App() {
     }
     
     try {
-      let response = await fetch(`${Config.API_ADDRESS}/api`);
-      let data = await response.json();
-
-      if (data.status === "starting") {
-        setWaitingForSystem(WaitingStates.WaitingForKernel);
-      } else if (data.status === "ready") {
-        setWaitingForSystem(WaitingStates.Idle);
+      let response = await fetch(`${Config.API_ADDRESS}/api`, {redirect: 'manual'});
+      if (response.type === 'opaqueredirect') {
+        // redirect occurs in the AppService when a new login is required. We could reload automatically,
+        // but that would lead to the user loosing their previous results.
+        setWaitingForSystem(WaitingStates.SessionTimeout);
       } else {
-        setWaitingForSystem(WaitingStates.WaitingForKernel);
-      }
+        let data = await response.json();
 
-      data.results.forEach(function (result: {value: string, type: string}) {
-        if (result.value.trim().length == 0) {
-          return;
+        if (data.status === "starting") {
+          setWaitingForSystem(WaitingStates.WaitingForKernel);
+        } else if (data.status === "ready") {
+          setWaitingForSystem(WaitingStates.Idle);
+        } else {
+          setWaitingForSystem(WaitingStates.WaitingForKernel);
         }
 
-        addMessage({ text: result.value, type: result.type, role: "system" });
-      });
+        data.results.forEach(function (result: {value: string, type: string}) {
+          if (result.value.trim().length == 0) {
+            return;
+          }
+
+          addMessage({ text: result.value, type: result.type, role: "system" });
+        });
+      }
     } catch (error) {
       if (error instanceof(TypeError)) {
         if (waitingForSystem != WaitingStates.WaitingForKernel) {
-          addMessage({ text: "Kernel connection lost.", type: "message", role: "system" })
           setWaitingForSystem(WaitingStates.WaitingForKernel);
         }
       } else {

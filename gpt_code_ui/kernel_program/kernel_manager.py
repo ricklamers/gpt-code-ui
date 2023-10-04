@@ -166,6 +166,7 @@ def create_venv(venv_dir: pathlib.Path, install_default_packages: bool) -> pathl
                 "matplotlib>=3.7,<3.8",
                 "openpyxl>=3.1.2,<4",
                 "rdkit>=2023.3.3",
+                "py3Dmol>=2.0.4",
                 "scipy==1.11.1",
                 "scikit-learn==1.3.0",
             ]

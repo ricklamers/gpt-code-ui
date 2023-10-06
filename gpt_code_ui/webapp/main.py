@@ -279,6 +279,8 @@ def download_file(session_id):
 @app.route('/generate', methods=['POST'])
 @session_id_required
 def generate_code(session_id):
+    requests.post(f'http://localhost:{KERNEL_APP_PORT}/status/{session_id}', json={"status": "generating"})
+
     user_prompt = request.json.get('prompt', '')
     model = request.json.get('model', None)
 
@@ -293,6 +295,8 @@ def generate_code(session_id):
 
     if status == 200:
         chat_history[session_id].add_answer(text)
+
+    requests.post(f'http://localhost:{KERNEL_APP_PORT}/status/{session_id}', json={"status": "ready"})
 
     return jsonify({'code': code, 'text': text}), status
 

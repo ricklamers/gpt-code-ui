@@ -196,17 +196,6 @@ def handle_restart(session_id):
     return jsonify({"result": "success", "status": km.status})
 
 
-@app.route("/shutdown/<session_id>", methods=["POST"])
-def handle_shutdown(session_id):
-    global kernel_managers
-    kernel_managers_lock.acquire()
-    try:
-        del kernel_managers[session_id]
-    finally:
-        kernel_managers_lock.release()
-    return jsonify({"result": "success", "status": "terminated"})
-
-
 @app.route("/workdir/<session_id>", methods=["GET"])
 def handle_workdir(session_id):
     km = _get_kernel_manager(session_id)

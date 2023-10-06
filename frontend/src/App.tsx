@@ -13,7 +13,10 @@ export type MessageDict = {
 };
 
 function App() {
-  const COMMANDS = ["reset"];
+  // map from user command to kernel api endpoint, info message, etc.
+  const COMMANDS = {
+    "reset": {endpoint: "restart", status: WaitingStates.WaitingForKernel, message: "Restarting the kernel."},
+  };
 
   let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-35-turbo-0613"}]);
 
@@ -44,7 +47,7 @@ function App() {
         type: "message",
       },
       {
-        text: "If I get stuck just type 'reset' and I'll restart the kernel.",
+        text: "If I get stuck just type `reset` and I'll restart the kernel.",
         role: "generator",
         type: "message",
       },
@@ -74,27 +77,24 @@ function App() {
     });
   };
 
-  const handleCommand = (command: string) => {
-    if (command == "reset") {
-      addMessage({ text: "Restarting the kernel.", type: "message", role: "system" });
-      setWaitingForSystem(WaitingStates.WaitingForKernel);
-
-      fetch(`${Config.API_ADDRESS}/restart`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      })
-        .then(() => {})
-        .catch((error) => console.error("Error:", error));
-    }
+  const handleCommand = ({endpoint, message,  status}: {endpoint:string, message: string, status: WaitingStates}) => {
+    addMessage({ text: message, type: "message", role: "system" });
+    setWaitingForSystem(status);
+    fetch(`${Config.API_ADDRESS}/${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    })
+      .then(() => {})
+      .catch((error) => console.error("Error:", error));
   };
 
   const sendMessage = async (userInput: string) => {
     try {
-      if (COMMANDS.includes(userInput)) {
-        handleCommand(userInput);
+      if(userInput in COMMANDS) {
+        handleCommand(COMMANDS[userInput as keyof typeof COMMANDS])
         return;
       }
 

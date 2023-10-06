@@ -52,6 +52,9 @@ class KernelManager:
     def status(self):
         return self._status
 
+    def set_status(self, status: str):
+        self._status = status
+
     def __del__(self):
         print(f'Killing kernel {self._session_id}')
         self._status = 'stopping'
@@ -144,35 +147,53 @@ async def start_snakemq():
     await asyncio.gather(async_send_queued_messages(), async_link_loop())
 
 
-@app.route("/api/<session_id>", methods=["POST", "GET"])
-def handle_request(session_id: str):
+def _get_kernel_manager(session_id: str, force_recreate: bool = False) -> KernelManager:
     global kernel_managers
-    if session_id not in kernel_managers:
+    if force_recreate:
         kernel_managers_lock.acquire()
         try:
-            # while waiting for the lock, the object already might have been created --> check again inside the lock
-            if session_id not in kernel_managers:
-                kernel_managers[session_id] = KernelManager(session_id)
+            kernel_managers[session_id] = KernelManager(session_id)
         finally:
             kernel_managers_lock.release()
+    else:
+        if session_id not in kernel_managers:
+            kernel_managers_lock.acquire()
+            try:
+                # while waiting for the lock, the object already might have been created --> check again inside the lock
+                if session_id not in kernel_managers:
+                    kernel_managers[session_id] = KernelManager(session_id)
+            finally:
+                kernel_managers_lock.release()
+
+    return kernel_managers[session_id]
+
+
+@app.route("/api/<session_id>", methods=["POST", "GET"])
+def handle_request(session_id: str):
+    km = _get_kernel_manager(session_id)
 
     if request.method == "GET":
-        # Handle GET requests by sending everything that's in the receive_queue
-        return jsonify({"results": kernel_managers[session_id].get_results(), "status": kernel_managers[session_id].status})
+        # Handle GET requests by sending everything that is in the receive_queue
+        return jsonify({"results": km.get_results(), "status": km.status})
     elif request.method == "POST":
-        kernel_managers[session_id].execute(request.json['command'])
-        return jsonify({"result": "success"})
+        km.execute(request.json['command'])
+        return jsonify({"result": "success", "status": km.status})
+
+
+@app.route("/status/<session_id>", methods=["POST", "GET"])
+def handle_status(session_id: str):
+    km = _get_kernel_manager(session_id)
+
+    if request.method == "POST":
+        km.set_status(request.json['status'])
+
+    return jsonify({"result": "success", "status": km.status})
 
 
 @app.route("/restart/<session_id>", methods=["POST"])
 def handle_restart(session_id):
-    global kernel_managers
-    kernel_managers_lock.acquire()
-    try:
-        kernel_managers[session_id] = KernelManager(session_id)
-    finally:
-        kernel_managers_lock.release()
-    return jsonify({"result": "success"})
+    km = _get_kernel_manager(session_id, force_recreate=True)
+    return jsonify({"result": "success", "status": km.status})
 
 
 @app.route("/shutdown/<session_id>", methods=["POST"])
@@ -183,15 +204,13 @@ def handle_shutdown(session_id):
         del kernel_managers[session_id]
     finally:
         kernel_managers_lock.release()
-    return jsonify({"result": "success"})
+    return jsonify({"result": "success", "status": "terminated"})
 
 
 @app.route("/workdir/<session_id>", methods=["GET"])
 def handle_workdir(session_id):
-    try:
-        return jsonify({"result": str(kernel_managers[session_id].workdir)})
-    except KeyError:
-        return jsonify({"error": f'Failed: Kernel {session_id} not found.'}), 404
+    km = _get_kernel_manager(session_id)
+    return jsonify({"result": str(km.workdir)})
 
 
 async def main():

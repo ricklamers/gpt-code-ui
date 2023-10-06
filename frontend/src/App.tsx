@@ -158,6 +158,8 @@ function App() {
           setWaitingForSystem(WaitingStates.WaitingForKernel);
         } else if (data.status === "ready") {
           setWaitingForSystem(WaitingStates.Idle);
+        } else if (data.status === "generating") {
+          setWaitingForSystem(WaitingStates.GeneratingCode);
         } else {
           setWaitingForSystem(WaitingStates.WaitingForKernel);
         }

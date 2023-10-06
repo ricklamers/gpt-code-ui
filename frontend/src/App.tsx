@@ -15,7 +15,17 @@ export type MessageDict = {
 function App() {
   // map from user command to kernel api endpoint, info message, etc.
   const COMMANDS = {
-    "reset": {endpoint: "restart", status: WaitingStates.WaitingForKernel, message: "Restarting the kernel."},
+    "reset": {
+      endpoint: `${Config.API_ADDRESS}/restart`,
+      status: WaitingStates.WaitingForKernel,
+      message: "Restarting the kernel.",
+      onSuccess: () => {}
+    },
+    "clear": {
+      endpoint: `${Config.WEB_ADDRESS}/clear_history`,
+      status: WaitingStates.Idle,
+      message: "Clearing chat history.",
+      onSuccess: () => { setMessages(DEFAULT_MESSAGES); }},
   };
 
   let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-35-turbo-0613"}]);
@@ -39,24 +49,21 @@ function App() {
     MODELS[0].name
   );
 
-  let [messages, setMessages] = useState<Array<MessageDict>>(
-    Array.from([
-      {
-        text: "Hello! I am a GPT Code assistant. Ask me to do something for you!\nPro tip: you can upload a file and I'll be able to use it.",
-        role: "generator",
-        type: "message",
-      },
-      {
-        text: "If I get stuck just type `reset` and I'll restart the kernel.",
-        role: "generator",
-        type: "message",
-      },
-    ])
-  );
+  const DEFAULT_MESSAGES = Array.from([
+    {
+      text: "Hello! I am a GPT Code assistant. Ask me to do something for you!\nPro tip: you can upload a file and I'll be able to use it.",
+      role: "generator",
+      type: "message",
+    },
+    {
+      text: "If I get stuck just type `reset` and I'll restart the kernel. In case you want to clear the conversation history, just type `clear`.",
+      role: "generator",
+      type: "message",
+    },
+  ]);
 
-  let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
-    WaitingStates.Idle
-  );
+  let [messages, setMessages] = useState<Array<MessageDict>>(DEFAULT_MESSAGES);
+  let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
   const submitCode = async (code: string) => {
@@ -77,17 +84,17 @@ function App() {
     });
   };
 
-  const handleCommand = ({endpoint, message,  status}: {endpoint:string, message: string, status: WaitingStates}) => {
+  const handleCommand = ({endpoint, message,  status, onSuccess}: {endpoint:string, message: string, status: WaitingStates, onSuccess: () => void}) => {
     addMessage({ text: message, type: "message", role: "system" });
     setWaitingForSystem(status);
-    fetch(`${Config.API_ADDRESS}/${endpoint}`, {
+    fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({}),
     })
-      .then(() => {})
+      .then(onSuccess)
       .catch((error) => console.error("Error:", error));
   };
 

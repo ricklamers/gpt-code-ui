@@ -111,8 +111,11 @@ Notes:
             f"Executing this code lead to an error.\nThe first lines of the error message read:\n{self._truncate(message)}",
             "Computer")
 
-    def __call__(self):
-        return self._buffer
+    def __call__(self, exclude_system: bool = False):
+        if exclude_system:
+            return [entry for entry in self._buffer if entry["role"] != "system"]
+        else:
+            return self._buffer
 
 
 chat_history = defaultdict(ChatHistory)
@@ -243,7 +246,8 @@ def proxy_kernel_manager(session_id, path):
         resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}')
 
     # store execution results in conversation history to allow back-references by the user
-    for res in json.loads(resp.content).get('results', []):
+    content = json.loads(resp.content)
+    for res in content.get('results', []):
         if res['type'] == "message":
             chat_history[session_id].add_execution_result(res['value'])
         elif res['type'] == "message_error":
@@ -256,7 +260,10 @@ def proxy_kernel_manager(session_id, path):
     headers = [(name, value) for (name, value) in resp.raw.headers.items()
                if name.lower() not in excluded_headers]
 
-    response = Response(resp.content, resp.status_code, headers)
+    # inject the conversation history into the results
+    content['chat_history'] = chat_history[session_id](exclude_system=True)
+
+    response = Response(json.dumps(content), resp.status_code, headers)
     return response
 
 
@@ -274,6 +281,13 @@ def download_file(session_id):
         return resp, resp.status_code
 
     return send_from_directory(workdir, file, as_attachment=True)
+
+
+@app.route('/clear_history', methods=['POST'])
+@session_id_required
+def clear_history(session_id):
+    del chat_history[session_id]
+    return jsonify({'result': 'success'})
 
 
 @app.route('/generate', methods=['POST'])

@@ -49,6 +49,37 @@ function App() {
     MODELS[0].name
   );
 
+  let [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
+  let [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
+
+  const selectFoundryFolder = async (folder: string | undefined) => {
+    setFoundryFolder(folder);
+    try {
+      if (folder != undefined) {
+        const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files?` + new URLSearchParams({folder: folder}));
+        if (response.ok) {
+          const json = await response.json();
+          setFoundryAvailableDatasets(json.datasets);
+        } else {
+          setFoundryAvailableDatasets(undefined);
+        }
+
+      } else {
+        const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files`);
+        const json = await response.json();
+        setFoundryFolder(json.folder);
+        setFoundryAvailableDatasets(json.datasets);
+      }
+    } catch (e) {
+      console.error(e);
+      setFoundryAvailableDatasets(undefined);
+    };
+  }
+
+  useEffect(() => {
+    selectFoundryFolder(foundryFolder);
+  }, []);
+
   const DEFAULT_MESSAGES = Array.from([
     {
       text: "Hello! I am a GPT Code assistant. Ask me to do something for you!\nPro tip: you can upload a file and I'll be able to use it.",
@@ -199,6 +230,29 @@ function App() {
     setWaitingForSystem(WaitingStates.UploadingFile);
   }
 
+  async function selectFoundryDataset(dataset_rid: string) {
+    if (dataset_rid != '') {
+      try {
+        setWaitingForSystem(WaitingStates.UploadingFile);
+        const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ "dataset_rid": dataset_rid }),
+        });
+        const json = await response.json();
+        json.map((file: {message: string, filename: string}) => {
+            addMessage({ text: file.message, type: "message", role: "upload" });
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setWaitingForSystem(WaitingStates.Idle);
+      };
+    }
+  }
+
   React.useEffect(() => {
     const interval = setInterval(getApiData, 1000);
     return () => clearInterval(interval);
@@ -258,6 +312,10 @@ function App() {
             onSendMessage={sendMessage}
             onCompletedUpload={completeUpload}
             onStartUpload={startUpload}
+            onSelectFoundryFolder={selectFoundryFolder}
+            foundryFolder={foundryFolder}
+            foundryAvailableDatasets={foundryAvailableDatasets}
+            onSelectFoundryDataset={selectFoundryDataset}
           />
         </div>
       </div>

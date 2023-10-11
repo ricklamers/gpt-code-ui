@@ -132,7 +132,7 @@ function App() {
         setWaitingForSystem(WaitingStates.Idle);
         return;
       }
-      
+
       if (!!code) {
         submitCode(code);
         setWaitingForSystem(WaitingStates.RunningCode);
@@ -151,7 +151,7 @@ function App() {
     if(document.hidden){
       return;
     }
-    
+
     try {
       let response = await fetch(`${Config.API_ADDRESS}/api`, {redirect: 'manual'});
       if (response.type === 'opaqueredirect') {
@@ -185,7 +185,7 @@ function App() {
           setWaitingForSystem(WaitingStates.WaitingForKernel);
         }
       } else {
-        console.log('Error while fetching from api: ' + error);
+        console.error('Error while fetching from api: ' + error);
       }
     }
   }
@@ -214,18 +214,18 @@ function App() {
   React.useEffect(() => {
     const clickHandler = (event: any) => {
       let element = event.target;
-      
+
       // If an <a> element was found, prevent default action and do something else
       if (element != null && element.tagName === 'A') {
         // Check if href starts with /download
-        
+
         if (element.getAttribute("href").startsWith(`/download`)) {
           event.preventDefault();
 
           // Make request to ${Config.WEB_ADDRESS}/download instead
           // make it by opening a new tab
           window.open(`${Config.WEB_ADDRESS}${element.getAttribute("href")}`);
-        }        
+        }
       }
     };
 
@@ -236,7 +236,7 @@ function App() {
     return () => {
       document.removeEventListener('click', clickHandler);
     };
-  }, []); 
+  }, []);
 
   return (
     <>

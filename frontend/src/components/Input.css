@@ -15,7 +15,7 @@ textarea:focus {
     outline: none
 }
 
-form.file-upload button, button.send {
+form.file-upload button, form.file-open button, button.send {
     border: 0;
     background: #eee;
     margin: 0.5rem;
@@ -25,11 +25,11 @@ form.file-upload button, button.send {
     height: fit-content;
 }
 
-form.file-upload button {
+form.file-upload button, form.file-open button {
     margin-right: 0;
 }
 
-form.file-upload svg, button.send svg {
+form.file-upload svg, form.file-open svg, button.send svg {
     margin-top: 3px;
     width: 20px;
     height: auto;

@@ -8,6 +8,7 @@ import logging
 import sys
 import openai
 import pandas as pd
+import pandas.api.types as pd_types
 import uuid
 from functools import wraps
 from collections import defaultdict
@@ -145,11 +146,22 @@ def inspect_file(filename: str) -> str:
         '.sql': pd.read_sql,
     }
 
+    def _convert_type(t):
+        if pd_types.is_string_dtype(t):
+            return 'string'
+        elif pd_types.is_integer_dtype(t):
+            return 'integer'
+        elif pd_types.is_float_dtype(t):
+            return 'float'
+        else:
+            return t
+
     _, ext = os.path.splitext(filename)
 
     try:
         df = READER_MAP[ext.lower()](filename)
-        return f'The file contains the following columns: {", ".join(df.columns)}'
+        column_table = '| Column Name | Column Type |\n| ----------- | ----------- |\n' + '\n'.join([f'| {n} | {_convert_type(t)} |' for n, t in df.dtypes.items()])
+        return f'The file contains the following columns:\n{column_table}'
     except KeyError:
         return ''  # unsupported file type
     except Exception:

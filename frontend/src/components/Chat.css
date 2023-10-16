@@ -46,6 +46,12 @@ div.message-body {
     width: 100%;
 }
 
+kbd > kbd {
+    border-radius: 3px;
+    padding: 1px 2px 0;
+    border: 1px solid;
+}
+
 .loader {
     border: 5px solid #74a89b;
     border-radius: 50%;

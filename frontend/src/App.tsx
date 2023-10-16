@@ -82,12 +82,15 @@ function App() {
 
   const DEFAULT_MESSAGES = Array.from([
     {
-      text: "Hello! I am a GPT Code assistant. Ask me to do something for you!\nPro tip: you can upload a file and I'll be able to use it.",
+      text: `Hello! I am a GPT Code assistant. Ask me to do something for you!
+Pro tip: you can upload a file and I'll be able to use it.`,
       role: "generator",
       type: "message",
     },
     {
-      text: "If I get stuck just type `reset` and I'll restart the kernel. In case you want to clear the conversation history, just type `clear`.",
+      text: `If I get stuck just type <kbd>reset</kbd> and I'll restart the kernel.
+In case you want to clear the conversation history, just type <kbd>clear</kbd>.
+Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&darr;</kbd></kbd> to navigate through previous prompts.`,
       role: "generator",
       type: "message",
     },
@@ -309,6 +312,7 @@ function App() {
             messages={messages}
           />
           <Input
+            Messages={messages}
             onSendMessage={sendMessage}
             onCompletedUpload={completeUpload}
             onStartUpload={startUpload}

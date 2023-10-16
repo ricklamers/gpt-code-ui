@@ -17,8 +17,11 @@ import Avatar from '@mui/material/Avatar';
 import TextareaAutosize from "react-textarea-autosize";
 import Config from "../config";
 import "./Input.css";
+import { MessageDict } from "../App"
+
 
 export default function Input(props: {
+  Messages: MessageDict[],
   onSendMessage: any,
   onStartUpload: any,
   onCompletedUpload: any,
@@ -32,6 +35,7 @@ export default function Input(props: {
   let [inputIsFocused, setInputIsFocused] = useState<boolean>(false);
   let [userInput, setUserInput] = useState<string>('');
   let [foundryDialogOpen, setFoundryDialogOpen] = useState(false);
+  let [messageReplay, setMessageReplay] = useState(0);
 
   const handleFoundryDialogClose = (value: string) => {
     setFoundryDialogOpen(false);
@@ -78,14 +82,37 @@ export default function Input(props: {
 
 
   const handleSendMessage = async () => {
+    setMessageReplay(0);
     props.onSendMessage(userInput);
     setUserInput("");
   }
 
+  const handleArrow = async (dir: number) => {
+    let newMessage = messageReplay;
+    while (newMessage + dir < 1 && newMessage + dir > -props.Messages.length) {
+      newMessage = newMessage + dir;
+      if (newMessage === 0) {
+        setUserInput("");
+        setMessageReplay(newMessage);
+        break;
+      } else if (props.Messages[props.Messages.length + newMessage].role === 'user') {
+        setUserInput(props.Messages[props.Messages.length + newMessage].text);
+        setMessageReplay(newMessage);
+        break;
+      }
+    }
+  }
+
   const handleKeyDown = (e: any) => {
     if (e.key === "Enter" && e.shiftKey === false) {
-        e.preventDefault();
-        handleSendMessage();
+      e.preventDefault();
+      handleSendMessage();
+    } else if (e.key === 'ArrowUp' && e.altKey === true) {
+      e.preventDefault();
+      handleArrow(-1);
+    } else if (e.key === 'ArrowDown' && e.altKey === true) {
+      e.preventDefault();
+      handleArrow(1);
     }
   };
 

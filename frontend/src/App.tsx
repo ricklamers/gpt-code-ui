@@ -2,7 +2,7 @@ import "./App.css";
 import Input from "./components/Input";
 import Sidebar from "./components/Sidebar";
 import Chat, { WaitingStates } from "./components/Chat";
-import React, { useState, useEffect  } from "react";
+import React, { useState, useEffect } from "react";
 import Config from "./config";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -96,7 +96,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
     },
   ]);
 
-  let [messages, setMessages] = useState<Array<MessageDict>>(DEFAULT_MESSAGES);
+  let [messages, setMessages] = useState<MessageDict[]>(DEFAULT_MESSAGES);
   let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -113,7 +113,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
   };
 
   const addMessage = (message: MessageDict) => {
-    setMessages((state: any) => {
+    setMessages((state: MessageDict[]) => {
       return [...state, message];
     });
   };

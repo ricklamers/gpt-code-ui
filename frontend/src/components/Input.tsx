@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, KeyboardEvent, MouseEvent, ChangeEvent } from "react";
 
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FileOpenIcon from '@mui/icons-material/FileOpen';
@@ -22,13 +22,13 @@ import { MessageDict } from "../App"
 
 export default function Input(props: {
   Messages: MessageDict[],
-  onSendMessage: any,
-  onStartUpload: any,
-  onCompletedUpload: any,
+  onSendMessage: (msg: string) => void,
+  onStartUpload: (filename: string) => void,
+  onCompletedUpload: (msg: string) => void,
   foundryFolder: string | undefined,
   onSelectFoundryFolder: (folder: string) => void,
   foundryAvailableDatasets: { name: string; dataset_rid: string; }[] | undefined;
-  onSelectFoundryDataset: any; }
+  onSelectFoundryDataset: (name: string) => void; }
 ) {
 
   let fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,13 +44,13 @@ export default function Input(props: {
     }
   };
 
-  const handleUpload = (e: any) => {
+  const handleUpload = (e: MouseEvent) => {
     e.preventDefault();
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: any) => {
-    if (e.target.files.length > 0) {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files != null && e.target.files.length > 0) {
       const file = e.target.files[0];
 
       // Create a new FormData instance
@@ -103,7 +103,7 @@ export default function Input(props: {
     }
   }
 
-  const handleKeyDown = (e: any) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" && e.shiftKey === false) {
       e.preventDefault();
       handleSendMessage();

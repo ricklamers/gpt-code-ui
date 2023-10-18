@@ -26,11 +26,12 @@ pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopa
 ```
 
 ## User interface
-<img src="https://github.com/ricklamers/gpt-code-ui/assets/1309307/c29c504a-a7ed-4ae0-9360-d7224bc3e3d6" alt="GPT-Code logo" width="100%" />
+![User Interface](UserInterface.png | width=100)
  
 ## Features
 - File upload
 - File download
+- Dataset Download from Palantir Foundry
 - Context awareness (it can refer to your previous messages)
 - Generate code
 - Run code (Python kernel)

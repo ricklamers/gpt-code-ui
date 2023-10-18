@@ -269,7 +269,7 @@ def proxy_kernel_manager(session_id, path):
         elif res['type'] == "message_error":
             chat_history[session_id].add_error(res['value'])
 
-        print(session_id, res)
+        log.debug(session_id, res)
 
     excluded_headers = ['content-encoding',
                         'content-length', 'transfer-encoding', 'connection']
@@ -361,7 +361,11 @@ def upload_file(session_id):
 @app.route('/foundry_files', methods=['GET', 'POST'])
 @session_id_required
 def foundry_files(session_id, folder=None):
-    fc = FoundryRestClient()
+    try:
+        fc = FoundryRestClient()
+    except ValueError as e:
+        log.exception(e)
+        return 'Foundry access misconfigured on server', 500
 
     if request.method == "POST":
         req = request.get_json()

@@ -201,7 +201,7 @@ def start_kernel(kernel_dir: pathlib.Path):
     shutil.rmtree(kernel_dir, ignore_errors=True)
     os.makedirs(kernel_dir)
 
-    kernel_env = os.environ.copy()
+    kernel_env = {}  # instead of os.environ.copy() to prevent leaking information from the runtime into the kernel
     kernel_connection_file = kernel_dir / "kernel_connection_file.json"
     launch_kernel_script_path = pathlib.Path(__file__).parent.resolve() / "launch_kernel.py"
 
@@ -212,7 +212,7 @@ def start_kernel(kernel_dir: pathlib.Path):
     else:
         kernel_venv_dir = kernel_dir / 'venv'
         kernel_venv_bindir, kernel_python_executable = create_derived_venv(base_dir, kernel_venv_dir)
-        kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env['PATH']
+        kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env.get('PATH', '')
         logger.info(f'Created kernel venv at {kernel_venv_dir} with python binary {kernel_python_executable}.')
 
     # start the kernel using the virtual env python executable

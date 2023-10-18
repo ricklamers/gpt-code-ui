@@ -23,3 +23,4 @@ dist/
 build/
 .app_service_config.json
 .DS_Store
+.ipynb_checkpoints

@@ -194,9 +194,6 @@ def create_derived_venv(base_venv: pathlib.Path, venv_dir: pathlib.Path):
 
 
 def start_kernel(kernel_dir: pathlib.Path):
-    cwd = pathlib.Path(os.getcwd())
-    base_dir = cwd / config.BASE_VENV
-
     # Cleanup potential leftovers
     shutil.rmtree(kernel_dir, ignore_errors=True)
     os.makedirs(kernel_dir)
@@ -211,7 +208,7 @@ def start_kernel(kernel_dir: pathlib.Path):
         logger.info(f'Skipped creating kernel venv as there is no internet connection. Using python binary {kernel_python_executable}.')
     else:
         kernel_venv_dir = kernel_dir / 'venv'
-        kernel_venv_bindir, kernel_python_executable = create_derived_venv(base_dir, kernel_venv_dir)
+        kernel_venv_bindir, kernel_python_executable = create_derived_venv(config.BASE_VENV, kernel_venv_dir)
         kernel_env['PATH'] = str(kernel_venv_bindir) + os.pathsep + kernel_env.get('PATH', '')
         logger.info(f'Created kernel venv at {kernel_venv_dir} with python binary {kernel_python_executable}.')
 

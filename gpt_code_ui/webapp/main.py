@@ -19,8 +19,7 @@ from dotenv import load_dotenv
 from foundry_dev_tools import FoundryRestClient
 from foundry_dev_tools.foundry_api_client import FoundryAPIError
 
-from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
-from gpt_code_ui.kernel_program.config import NO_INTERNET_AVAILABLE
+from gpt_code_ui.kernel_program.config import NO_INTERNET_AVAILABLE, KERNEL_APP_PORT
 
 load_dotenv('.env')
 

@@ -20,8 +20,6 @@ RUN set -eux; \
     ; \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir backendbuild
-WORKDIR /backendbuild
 RUN pip install --upgrade pip setuptools
 RUN pip install \
         "ipykernel>=6,<7" \
@@ -39,6 +37,9 @@ RUN pip install \
         "py3Dmol>=2.0.4" \
         "scipy>=1.11.1" \
         "scikit-learn>=1.3.0"
+
+RUN mkdir backendbuild
+WORKDIR /backendbuild
 COPY gpt_code_ui/ ./gpt_code_ui
 COPY setup.py ./
 COPY README.md ./
@@ -49,11 +50,18 @@ COPY --from=uibuild /frontendbuild/frontend/dist/ ./gpt_code_ui/webapp/static
 
 COPY run_with_app_service_config.py ./
 
+RUN mkdir workspace
+RUN chmod 0777 workspace
+RUN touch app.log
+RUN chmod 0777 app.log
+
 RUN ls -al .
 RUN ls -al ./gpt_code_ui
 RUN which python
-RUN cat run_with_app_service_config.py
 
 EXPOSE 8080
+
+RUN adduser --no-create-home codeimpact
+USER codeimpact
 
 CMD ["python", "./run_with_app_service_config.py", "./gpt_code_ui/main.py"]

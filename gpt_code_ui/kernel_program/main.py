@@ -1,4 +1,3 @@
-import os
 import subprocess
 import sys
 import pathlib
@@ -21,9 +20,6 @@ load_dotenv('.env')
 import gpt_code_ui.kernel_program.config as config
 import gpt_code_ui.kernel_program.utils as utils
 
-
-APP_PORT = int(os.environ.get("API_PORT", 5010))
-
 # Get global logger
 logger = config.get_logger()
 
@@ -32,9 +28,9 @@ class KernelManager:
     KERNEL_MANAGER_SCRIPT_PATH = pathlib.Path(__file__).parent.resolve() / 'kernel_manager.py'
 
     def __init__(self, session_id: str):
-        print(f'Creating kernel {session_id}')
         self._session_id = session_id
-        self._workdir = pathlib.Path(os.getcwd()) / f'kernel.{self._session_id}'
+        self._workdir = config.KERNEL_BASE_DIR / f'kernel.{self._session_id}'
+        print(f'Creating kernel {session_id} inside {self._workdir}')
         self._result_queue = Queue()
         self._send_queue = Queue()
 
@@ -212,7 +208,7 @@ async def main():
 
 
 def run_flask_app():
-    app.run(host="0.0.0.0", port=APP_PORT)
+    app.run(host="0.0.0.0", port=config.KERNEL_APP_PORT)
 
 
 if __name__ == "__main__":

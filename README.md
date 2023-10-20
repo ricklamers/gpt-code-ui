@@ -6,25 +6,6 @@ Simply ask the OpenAI model to do something and it will generate & execute the c
 
 Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
-## Community
-Judah Cooper offered to start & curate a Discord community. Join [here](https://discord.gg/ZmTQwpkYu6).
-
-## Installation
-
-Open a terminal and run:
-
-```
-pip install gpt-code-ui
-gptcode
-```
-
-In order to make basic dependencies available it's recommended to run the following `pip` install
-in the Python environment that is used in the shell where you run `gptcode`:
-
-```sh
-pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopandas>=0.13,<0.14" "tabulate>=0.9.0<1.0" "PyPDF2>=3.0,<3.1" "pdfminer>=20191125,<20191200" "pdfplumber>=0.9,<0.10" "matplotlib>=3.7,<3.8"
-```
-
 ## User interface
 ![User Interface](UserInterface.png)
  
@@ -38,30 +19,65 @@ pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopa
 - Model switching (GPT-3.5 and GPT-4)
 
 ## Misc.
-### Using .env for OpenAI key
-You can put a .env in the working directory to load the `OPENAI_API_KEY` environment variable.
+### Running inside the AppService
+See the [Dockerfile](Dockerfile) for details. Most notably, we do not invoke the tool directly but via [run_with_app_service_config.py](rub_with_app_service_config.py), which extracts environment variable specifications from the json-formatted `APP_SERVICE_CONFIG` environment variable.
+In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
+```
+{
+  "OPENAI_API_KEY": "33 ... e8",
+  "OPENAI_API_BASE": "$APP_SERVICE_NLP_API_URL",
+  "OPENAI_API_TYPE": "azure",
+  "OPENAI_API_VERSION": "2023-06-01-preview",
+  "AZURE_OPENAI_DEPLOYMENTS": [
+    {"displayName": "GPT-3.5 0301", "name": "gpt-35-turbo-0301"},
+    {"displayName": "GPT-3.5 0613", "name": "gpt-35-turbo-0613"},
+    {"displayName": "GPT-3.5 16k", "name": "gpt-35-turbo-16k"},
+    {"displayName": "GPT-4 0314", "name": "gpt-4-0314"}
+  ],
+
+  "API_PORT": 5010,
+  "WEB_PORT": 8080,
+  "SNAKEMQ_PORT": 8765,
+
+  "NO_INTERNET_AVAILABLE": 1,
+
+  "SESSION_ENCRYPTION_KEY": "67ed8ea0-05f0-4086-9a54-6b2bb6dbcf29",
+
+  "DEBUG": 1,
+
+  "FOUNDRY_DATA_FOLDER": "/Group Functions/mgf-use-case-gpt-code-ui/data"
+}
+```
+
+### Running locally
+For local execution, your `.env` could read similar to
+```
+REQUESTS_CA_BUNDLE="/Users/m290886/Projects/technology_repository/merck_cacert_v1.pem"
+
+OPENAI_API_KEY="33 ... e8"
+OPENAI_API_BASE="https://mygpt-api.nlp.dev.uptimize.merckgroup.com"
+OPENAI_API_TYPE="azure"
+OPENAI_API_VERSION="2023-06-01-preview"
+AZURE_OPENAI_DEPLOYMENTS=[{"displayName": "GPT-3.5", "name": "gpt-35-turbo-0613"}, {"displayName": "GPT-3.5 16k", "name": "gpt-35-turbo-16k"}, {"displayName": "GPT-4 0314", "name": "gpt-4-0314"}, {"displayName": "GPT-4 0613", "name": "gpt-4-0613"}, {"displayName": "GPT-4 32k", "name": "gpt-4-32k"}, {"displayName": "GPT-4 32k 0613", "name": "gpt-4-32k-0613"}]
+# OPENAI_API_LOGLEVEL=debug
+
+API_PORT=5010
+WEB_PORT=8080
+SNAKEMQ_PORT=8765
+
+NO_INTERNET_AVAILABLE=1
+
+SESSION_ENCRYPTION_KEY="67ed8ea0-05f0-4086-9a54-6b2bb6dbcf29"
+
+DEBUG=1
+```
 
 ### Configurables
 Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.
-
-Set `OPENAI_BASE_URL` to change the OpenAI API endpoint that's being used (note this environment variable includes the protocol `https://...`).
-
-You can use the `.env.example` in the repository (make sure you `git clone` the repo to get the file first).
-
-For Azure OpenAI Services, there are also other configurable variables like deployment name. See `.env.azure-example` for more information.
-Note that model selection on the UI is currently not supported for Azure OpenAI Services.
-
-```
-cp .env.example .env
-vim .env
-gptcode
-```
-
-### Docker
-[localagi](https://github.com/localagi) took the effort of bundling the Python package in a Docker container. Check it out here: [gpt-code-ui-docker](https://github.com/localagi/gpt-code-ui-docker).
+When `NO_ITNERNET_AVAILABLE` is non-trueish or absent, the application will create dedicated virtual environments for every session and also m,akes active use of `!pip install ...` commands for missing packages.
 
 ## Contributing
-Please do and have a look at the [contributions guide](.github/CONTRIBUTING.md)! This should be a community initiative. I'll try my best to be responsive.
+Please contribute.
 
 
 Thank you for your interest in this project!

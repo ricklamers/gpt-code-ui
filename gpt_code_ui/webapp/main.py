@@ -46,6 +46,8 @@ FOUNDRY_DATA_FOLDER = os.getenv("FOUNDRY_DATA_FOLDER", "/Group Functions/mgf-use
 class ChatHistory():
     def __init__(self):
         self._buffer = list()
+        self._last_untruncated = None
+        self._truncation_maxlines = 20
 
         self._append(
             "system",
@@ -91,8 +93,23 @@ Notes:
 
         self._buffer.append(entry)
 
-    def _truncate(self, s: str, maxlines: int = 10) -> str:
-        return '\n'.join(s.splitlines()[:maxlines])
+    def _extend_or_append(self, role: str, prefix: str, content: str, name: str = None) -> bool:
+        ''' Returns true if a new entry has been created (i.e. append instead of extend)'''
+        last = self._buffer[-1]
+        if last['role'] == role and last.get('name', None) == name:
+            last['content'] += content
+            return False
+        else:
+            self._append(role, f'{prefix}\n{content}', name)
+            return True
+
+    def _truncate(self, s: str) -> str:
+        return '\n'.join(s.splitlines()[:self._truncation_maxlines])
+
+    def _update_truncation(self):
+        if (self._last_untruncated is not None):
+            self._buffer[self._last_untruncated]['content'] = self._truncate(self._buffer[self._last_untruncated]['content'])
+        self._last_untruncated = len(self._buffer) - 1
 
     def add_prompt(self, prompt: str):
         self._append("user", prompt, "User")
@@ -104,16 +121,22 @@ Notes:
         self._append("user", f"In the following, I will refer to the file {filename}.\n{file_info}")
 
     def add_execution_result(self, result: str):
-        self._append(
+        if self._extend_or_append(
             "user",
-            f"These are the first lines of the output generated when executing the code:\n{self._truncate(result)}",
-            "Computer")
+            "These are the first lines of the output generated when executing the code:",
+            result,
+            "Computer"
+        ):
+            self._update_truncation()
 
     def add_error(self, message: str):
-        self._append(
+        if self._extend_or_append(
             "user",
-            f"Executing this code lead to an error.\nThe first lines of the error message read:\n{self._truncate(message)}",
-            "Computer")
+            "Executing this code lead to an error.\nThe first lines of the error message read:",
+            message,
+            "Computer"
+        ):
+            self._update_truncation()
 
     def __call__(self, exclude_system: bool = False):
         if exclude_system:

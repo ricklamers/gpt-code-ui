@@ -26,7 +26,7 @@ pip install "numpy>=1.24,<1.25" "dateparser>=1.1,<1.2" "pandas>=1.5,<1.6" "geopa
 ```
 
 ## User interface
-![User Interface](UserInterface.png | width=100)
+![User Interface](UserInterface.png)
  
 ## Features
 - File upload

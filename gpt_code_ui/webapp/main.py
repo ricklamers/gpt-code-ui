@@ -72,8 +72,8 @@ Notes:
         'matplotlib', # matplotlib==3.7.1
     For chemistry related tasks, you can use
         'rdkit', # rdkit>=2023.3.3
-        'py3Dmol', # py3Dmol>=2.0.4
     Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+    Do not use py3Dmol as it does not work. Use matplotlib instead, also for 3D structure plots of molecules.
     {  'Do not try to install additional packages as no internet connection is available. Do not include any "!pip install PACKAGE" commands.' if NO_INTERNET_AVAILABLE else
        'If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.'  }
     If the user requests to generate a table, produce code that prints a markdown table.

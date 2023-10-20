@@ -202,7 +202,7 @@ async def get_code(messages, model="gpt-3.5-turbo"):
 
     def extract_code(text):
         # Match triple backtick blocks first
-        triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
+        triple_match = re.search(r'```(?:(?:[^\r\n]*[pP]ython[^\r\n]*[\r\n])|(?:\w+\n))?(.+?)```', text, re.DOTALL)
         if triple_match:
             return triple_match.group(1).strip()
         else:

@@ -54,31 +54,7 @@ a:hover {
     flex-direction: column;
 }
 
-button, select {
-    padding: 0.8rem;
-    border: none;
-    border-radius: .25rem;
-    background-color: #333;
-    color: #fff;
-}
-
-select option {
-    padding: 0.8rem;
-}
-
-button {
-    cursor: pointer;
-    margin-bottom: 0.5rem;
-    background: #74a89b;
-}
-
-label {
-    font-size: 0.9rem;
-    color: #999;
-    margin-top: .5rem;
-    margin-bottom: .25rem;
-}
-
 label.header {
+    padding: 0.5rem 0;
     font-size: 1.2rem;
 }

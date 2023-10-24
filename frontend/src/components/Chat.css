@@ -52,6 +52,14 @@ kbd > kbd {
     border: 1px solid;
 }
 
+.message-body td, th {
+    border-left: 2vw solid transparent;
+}
+
+.message-body tr>td:first-child {
+     border: 0px;
+}
+
 .loader {
     border: 5px solid #74a89b;
     border-radius: 50%;

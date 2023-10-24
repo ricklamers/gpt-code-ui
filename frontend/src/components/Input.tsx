@@ -1,5 +1,6 @@
 import { useRef, useState, KeyboardEvent, MouseEvent, ChangeEvent } from "react";
 
+import FormControl from '@mui/material/FormControl';
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import FileOpenIcon from '@mui/icons-material/FileOpen';
 import SendIcon from "@mui/icons-material/Send";
@@ -129,12 +130,15 @@ export default function Input(props: {
         <Dialog open={foundryDialogOpen} onClose={() => handleFoundryDialogClose('') } fullWidth maxWidth="sm">
           <DialogTitle>Select Foundry Dataset</DialogTitle>
           <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
+          <FormControl fullWidth>
             <TextField
+              margin="dense"
               id="foundry-folder"
               label="Folder (RID or Path))"
               value={props.foundryFolder}
               onChange={e => { props.onSelectFoundryFolder(e.target.value); }}
             />
+          </FormControl>
             {props.foundryAvailableDatasets != undefined && props.foundryAvailableDatasets.length > 0 &&
               <List sx={{ pt: 0 }}>
                 {props.foundryAvailableDatasets.map((dataset) => (

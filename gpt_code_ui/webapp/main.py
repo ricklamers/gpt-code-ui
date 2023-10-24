@@ -153,6 +153,7 @@ def allowed_file(filename):
 
 
 def inspect_file(filename: str) -> str:
+    NUM_SAMPLE_ROWS = 5
     READER_MAP = {
         '.csv': pd.read_csv,
         '.tsv': pd.read_csv,
@@ -181,9 +182,14 @@ def inspect_file(filename: str) -> str:
     _, ext = os.path.splitext(filename)
 
     try:
-        df = READER_MAP[ext.lower()](filename)
+        df: pd.DataFrame = READER_MAP[ext.lower()](filename)
         column_table = '| Column Name | Column Type |\n| ----------- | ----------- |\n' + '\n'.join([f'| {n} | {_convert_type(t)} |' for n, t in df.dtypes.items()])
-        return f'The file contains the following columns:\n{column_table}'
+        return f'''The file contains the following columns:
+{column_table}
+
+The table has {len(df.index)} rows. The first {NUM_SAMPLE_ROWS} rows read
+{df.head(NUM_SAMPLE_ROWS).to_markdown()}
+'''
     except KeyError:
         return ''  # unsupported file type
     except Exception:
@@ -375,7 +381,7 @@ def upload_file(session_id):
         file.save(file_target)
         file_info = inspect_file(file_target)
         chat_history[session_id].upload_file(file.filename, file_info)
-        return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
+        return jsonify({'message': f'File `{file.filename}` uploaded successfully.\n{file_info}'}), 200
     else:
         return jsonify({'message': 'File type not supported.'}), 400
 
@@ -411,7 +417,7 @@ def foundry_files(session_id, folder=None):
                 file_info = inspect_file(file)
                 chat_history[session_id].upload_file(filename, file_info)
 
-                results.append({'filename': filename, 'message': f'File {filename} downloaded successfully.\n{file_info}'})
+                results.append({'filename': filename, 'message': f'File `{filename}` downloaded successfully.\n{file_info}'})
                 http_code = 200
             else:
                 results.append({'filename': filename, 'message': 'File type not supported.'})

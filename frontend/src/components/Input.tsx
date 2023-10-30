@@ -159,7 +159,7 @@ export default function Input(props: {
               <Alert severity="warning">No datasets found in folder</Alert>
             }
             {props.foundryAvailableDatasets == undefined &&
-              <Alert severity="error">Access to folder failed</Alert>
+              <Alert severity="error">Access to folder failed. Does it exist? Do you have access permissions?</Alert>
             }
           </DialogContent>
         </Dialog>

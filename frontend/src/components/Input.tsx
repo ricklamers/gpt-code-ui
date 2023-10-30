@@ -159,7 +159,7 @@ export default function Input(props: {
               <Alert severity="warning">No datasets found in folder</Alert>
             }
             {props.foundryAvailableDatasets == undefined &&
-              <Alert severity="error">Access to folder failed</Alert>
+              <Alert severity="error">Access to folder failed. Likely, you need to request access to the <a href="https://palantir.mcloud.merckgroup.com/workspace/hubble/exploration?objectId=ri.phonograph2-objects.main.object.5178b067-0753-49b5-bf1b-7c83b8323b6e">Code Impact use case</a>.</Alert>
             }
           </DialogContent>
         </Dialog>

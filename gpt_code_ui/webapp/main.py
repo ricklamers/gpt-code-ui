@@ -406,7 +406,10 @@ def foundry_files(session_id, folder=None):
         else:
             return resp, resp.status_code
 
-        files = fc.download_dataset_files(dataset_rid, workdir)
+        try:
+            files = fc.download_dataset_files(dataset_rid, workdir)
+        except requests.exceptions.HTTPError as e:
+            return e.response.json().get('errorCode', 'Unknown Error'), e.response.status_code
 
         results = []
         http_code = 400

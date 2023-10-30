@@ -244,10 +244,17 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
           },
           body: JSON.stringify({ "dataset_rid": dataset_rid }),
         });
-        const json = await response.json();
-        json.map((file: {message: string, filename: string}) => {
-            addMessage({ text: file.message, type: "message", role: "upload" });
-        });
+        if (response.ok) {
+          const json = await response.json();
+          json.map((file: {message: string, filename: string}) => {
+              addMessage({ text: file.message, type: "message", role: "upload" });
+          });
+        } else {
+          const msg = await response.text();
+          addMessage({ text: `Downloading dataset ${dataset_rid} failed with status code ${response.status}: ${msg}.
+Likely, you need to request access to the <a href="https://palantir.mcloud.merckgroup.com/workspace/hubble/exploration?objectId=ri.phonograph2-objects.main.object.5178b067-0753-49b5-bf1b-7c83b8323b6e" target="_blank">Code Impact use case</a>.`, type: "message", role: "upload" });
+          console.log(response);
+        }
       } catch (e) {
         console.error(e);
       } finally {

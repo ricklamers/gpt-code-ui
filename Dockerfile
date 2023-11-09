@@ -60,6 +60,12 @@ RUN which python
 
 EXPOSE 8080
 
+# restrict access to /proc to make it more difficult to access other proccesses, see https://superuser.com/a/704035
+RUN cat /etc/fstab
+RUN ls -al /etc/fstab
+RUN echo "proc /proc proc nosuid,nodev,noexec,hidepid=2 0 0" >> /etc/fstab
+RUN cat /etc/fstab
+
 RUN adduser --no-create-home codeimpact
 USER codeimpact
 

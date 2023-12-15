@@ -160,6 +160,8 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
     except AttributeError:
         return None, f"Malformed answer from API: {content}", 500
 
+    print('CONTENT FROM CODE:' + content)
+
     def extract_code(text):
         # Match triple backtick blocks first
         triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
@@ -172,6 +174,54 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
                 return single_match.group(1).strip()
 
     return extract_code(content), content.strip(), 200
+
+async def get_chat(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
+
+    prompt = f"""First, here is a history of what I asked you to do earlier. 
+    The actual prompt follows after ENDOFHISTORY. 
+    History:
+    {message_buffer.get_string()}
+    ENDOFHISTORY.
+    As a data analyst named Torben with ten years of experience in the domain of expense management. Your role is to help unexperienced people analyse data about expenses. The user is asking:
+    {user_prompt}"""
+
+    if user_openai_key:
+        openai.api_key = user_openai_key
+
+    arguments = dict(
+        temperature=0.7,
+        headers=OPENAI_EXTRA_HEADERS,
+        messages=[
+            # {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+    )
+
+    if openai.api_type == 'open_ai':
+        arguments["model"] = model
+    elif openai.api_type == 'azure':
+        arguments["deployment_id"] = model
+    else:
+        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
+
+    try:
+        result_GPT = openai.ChatCompletion.create(**arguments)
+
+        if 'error' in result_GPT:
+            raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
+
+        if result_GPT.choices[0].finish_reason == 'content_filter':
+            raise openai.APIError('Content Filter')
+
+    except openai.OpenAIError as e:
+        return None, f"Error from API: {e}", 500
+
+    try:
+        content = result_GPT.choices[0].message.content
+
+    except AttributeError:
+        return None, f"Malformed answer from API: {content}", 500
+    return content, 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
@@ -246,6 +296,7 @@ def inject_context():
 @app.route('/generate', methods=['POST'])
 def generate_code():
     user_prompt = request.json.get('prompt', '')
+    print('ACTION:' + user_prompt)
     user_openai_key = request.json.get('openAIKey', None)
     model = request.json.get('model', None)
 
@@ -260,6 +311,56 @@ def generate_code():
     message_buffer.append(user_prompt + "\n\n")
 
     return jsonify({'code': code, 'text': text}), status
+
+@app.route('/combined', methods=['POST'])
+def generate_combined():
+    user_prompt = request.json.get('prompt', '')
+    print('ACTION:' + user_prompt)
+    user_openai_key = request.json.get('openAIKey', None)
+    model = request.json.get('model', None)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    code, text, status = loop.run_until_complete(
+        get_code(user_prompt, user_openai_key, model))
+    loop.close()
+
+    print('TEXT: ' + text)
+
+    chat_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(chat_loop)
+    chat_text, status = chat_loop.run_until_complete(
+        get_chat('Given the following data: ' + text + ' ' + user_prompt, user_openai_key, model))
+    chat_loop.close()
+
+    print('CHAT_TEXT: ' + chat_text)
+
+    # Append all messages to the message buffer for later use
+    message_buffer.append(user_prompt + "\n\n")
+
+    return jsonify({'code': code, 'text': chat_text}), status
+
+
+@app.route('/chat', methods=['POST'])
+def generate_chat():
+    user_prompt = request.json.get('prompt', '')
+    user_openai_key = request.json.get('openAIKey', None)
+    model = request.json.get('model', None)
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    text, status = loop.run_until_complete(
+        get_chat(user_prompt, user_openai_key, model))
+    loop.close()
+
+    print('CHAT_TEXT: ' + text)
+
+    # Append all messages to the message buffer for later use
+    message_buffer.append(user_prompt + "\n\n")
+
+    return jsonify({'text': text}), status
 
 
 @app.route('/upload', methods=['POST'])

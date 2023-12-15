@@ -50,6 +50,11 @@ function App() {
         role: "generator",
         type: "message",
       },
+      {
+        text: "Write [chat] to chat with me",
+        role: "generator",
+        type: "message",
+      },
     ])
   );
   let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
@@ -102,10 +107,13 @@ function App() {
         return;
       }
 
+      const action = userInput.startsWith("[chat]") ? "chat" : userInput.startsWith("[combined]") ? "combined" : "generate"
+      console.log(`ACTION: ${action}`);
+
       addMessage({ text: userInput, type: "message", role: "user" });
       setWaitingForSystem(WaitingStates.GeneratingCode);
 
-      const response = await fetch(`${Config.WEB_ADDRESS}/generate`, {
+      const response = await fetch(`${Config.WEB_ADDRESS}/${action}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

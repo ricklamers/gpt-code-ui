@@ -97,6 +97,7 @@ async def start_snakemq():
         while True:
             if send_queue.qsize() > 0:
                 message = send_queue.get()
+                print('MESSAGE: ' + message)
                 utils.send_json(messaging, 
                     {"type": "execute", "value": message["command"]}, 
                     config.IDENT_KERNEL_MANAGER

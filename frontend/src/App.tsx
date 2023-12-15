@@ -120,7 +120,7 @@ function App() {
       const data = await response.json();
       const code = data.code;
 
-      addMessage({ text: data.text, type: "message", role: "generator" });
+      // addMessage({ text: data.text, type: "message", role: "generator" });
 
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);

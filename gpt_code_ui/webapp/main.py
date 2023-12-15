@@ -286,8 +286,7 @@ def download_file():
 @app.route('/inject-context', methods=['POST'])
 def inject_context():
     user_prompt = request.json.get('prompt', '')
-
-    # Append all messages to the message buffer for later use
+    
     message_buffer.append(user_prompt + "\n\n")
 
     return jsonify({"result": "success"})
@@ -311,35 +310,6 @@ def generate_code():
     message_buffer.append(user_prompt + "\n\n")
 
     return jsonify({'code': code, 'text': text}), status
-
-@app.route('/combined', methods=['POST'])
-def generate_combined():
-    user_prompt = request.json.get('prompt', '')
-    print('ACTION:' + user_prompt)
-    user_openai_key = request.json.get('openAIKey', None)
-    model = request.json.get('model', None)
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    code, text, status = loop.run_until_complete(
-        get_code(user_prompt, user_openai_key, model))
-    loop.close()
-
-    print('TEXT: ' + text)
-
-    chat_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(chat_loop)
-    chat_text, status = chat_loop.run_until_complete(
-        get_chat('Given the following data: ' + text + ' ' + user_prompt, user_openai_key, model))
-    chat_loop.close()
-
-    print('CHAT_TEXT: ' + chat_text)
-
-    # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
-
-    return jsonify({'code': code, 'text': chat_text}), status
 
 
 @app.route('/chat', methods=['POST'])

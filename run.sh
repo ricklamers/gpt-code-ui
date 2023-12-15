@@ -1,0 +1,1 @@
+rm -rf $HOME/Library/Python/3.9/lib/python/site-packages/gpt_code_ui/ && make build && mv build/lib/gpt_code_ui/ $HOME/Library/Python/3.9/lib/python/site-packages/gpt_code_ui/ && make build && python3 build/lib/gpt_code_ui/main.py

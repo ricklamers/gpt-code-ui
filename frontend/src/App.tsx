@@ -41,17 +41,12 @@ function App() {
   let [messages, setMessages] = useState<Array<MessageDict>>(
     Array.from([
       {
-        text: "Hello! I'm a GPT Code assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
+        text: "Hello! I'm the Pleo GPT Code and Chat assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
         role: "generator",
         type: "message",
       },
       {
         text: "If I get stuck just type 'reset' and I'll restart the kernel.",
-        role: "generator",
-        type: "message",
-      },
-      {
-        text: "Write [chat] to chat with me",
         role: "generator",
         type: "message",
       },
@@ -107,13 +102,10 @@ function App() {
         return;
       }
 
-      const action = userInput.startsWith("[chat]") ? "chat" : userInput.startsWith("[combined]") ? "combined" : "generate"
-      console.log(`ACTION: ${action}`);
-
       addMessage({ text: userInput, type: "message", role: "user" });
       setWaitingForSystem(WaitingStates.GeneratingCode);
 
-      const response = await fetch(`${Config.WEB_ADDRESS}/${action}`, {
+      const response = await fetch(`${Config.WEB_ADDRESS}/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,13 +148,33 @@ function App() {
     
     let response = await fetch(`${Config.API_ADDRESS}/api`);
     let data = await response.json();
-    data.results.forEach(function (result: {value: string, type: string}) {
+    await data.results.forEach(async function (result: {value: string, type: string}) {
       if (result.value.trim().length == 0) {
         return;
       }
 
-      addMessage({ text: result.value, type: result.type, role: "system" });
-      setWaitingForSystem(WaitingStates.Idle);
+      if ((result.type === "message" || result.type === "message_raw") && result.value !== 'Kernel is ready.') {
+        console.log(`INJECTING DATA: ${result.value}`)
+        const response = await fetch(`${Config.WEB_ADDRESS}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: `Give me a explanation of the following data ${result.value}`,
+            model: selectedModel,
+            openAIKey: openAIKey,
+          }),
+        });
+  
+        const data = await response.json();
+  
+        addMessage({ text: data.text, type: "message", role: "generator" });
+        setWaitingForSystem(WaitingStates.Idle);
+      } else {
+        addMessage({ text: result.value, type: result.type, role: "system" });
+        setWaitingForSystem(WaitingStates.Idle);
+      }
     });
   }
 

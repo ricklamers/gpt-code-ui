@@ -52,7 +52,7 @@ def print_color(text, color="gray"):
 
 def print_banner():
         
-        print("""
+        print(""" PLEO!!!
 █▀▀ █▀█ ▀█▀ ▄▄ █▀▀ █▀█ █▀▄ █▀▀
 █▄█ █▀▀ ░█░ ░░ █▄▄ █▄█ █▄▀ ██▄
         """)

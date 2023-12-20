@@ -41,7 +41,7 @@ APP_PORT = int(os.environ.get("WEB_PORT", 8080))
 
 
 class LimitedLengthString:
-    def __init__(self, maxlen=2000):
+    def __init__(self, maxlen=20000):
         self.data = deque()
         self.len = 0
         self.maxlen = maxlen
@@ -91,37 +91,48 @@ def inspect_file(filename: str) -> str:
     except Exception:
         return ''  # file reading failed. - Don't want to know why.
 
+system=f"""Act as a data analyst hereby referred to as EXPERT with ten years of experience in the domain of expense management and general accounting. Your role is to help inexperienced people analyse data about expenses and accounting. Be sure to help the user understand what to focus on and give suggestions on where it would make sense to dig deeper.
 
+    If generating Python code, follow the instructions under [GENERATE_PYTHON_INSTRUCTIONS].
+    
+    [GENERATE_PYTHON_INSTRUCTIONS]
+    Notes: 
+        First, think step by step what you want to do and write it down in English.
+        Then generate valid Python code in a code block 
+        Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment. 
+        Define every variable before you use it.
+        For data munging, you can use 
+            'numpy', # numpy==1.26.2
+            'dateparser', # dateparser==1.2.0
+            'pandas', # pandas==1.5.3
+            'geopandas', # geopandas==0.14.1
+        For pdf extraction, you can use
+            'PyPDF2', # PyPDF2==3.0.1
+            'pdfminer', # pdfminer==20191125
+            'pdfplumber', # pdfplumber==0.10.3
+        For data visualization, you can use
+            'matplotlib', # matplotlib==3.8.2
+        Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+        If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
+    
+    Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
+    """
 async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
 
+    
     prompt = f"""First, here is a history of what I asked you to do earlier. 
     The actual prompt follows after ENDOFHISTORY. 
     History:
     {message_buffer.get_string()}
     ENDOFHISTORY.
-    Write Python code, in a triple backtick Markdown code block, that does the following:
+    Aiming to help the user in the best possible way with the below [USER_PROMPT] do one of the following:
+    1. Write Python code, in a triple backtick Markdown code block, that supports what the user is trying to achieve. Use the instructions under [GENERATE_PYTHON_INSTRUCTIONS]
+    2. Answer the question the user asks.
+    3. Ask follow-up questions to better understand what the user wants to achieve. 
+    
+    [USER_PROMPT]
     {user_prompt}
-    
-    Notes: 
-        First, think step by step what you want to do and write it down in English.
-        Then generate valid Python code in a code block 
-        Make sure all code is valid - it be run in a Jupyter Python 3 kernel environment. 
-        Define every variable before you use it.
-        For data munging, you can use 
-            'numpy', # numpy==1.24.3
-            'dateparser' #dateparser==1.1.8
-            'pandas', # matplotlib==1.5.3
-            'geopandas' # geopandas==0.13.2
-        For pdf extraction, you can use
-            'PyPDF2', # PyPDF2==3.0.1
-            'pdfminer', # pdfminer==20191125
-            'pdfplumber', # pdfplumber==0.9.0
-        For data visualization, you can use
-            'matplotlib', # matplotlib==3.7.1
-        Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
-        If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-    
-    Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename."""
+    """
 
     if user_openai_key:
         openai.api_key = user_openai_key
@@ -130,7 +141,7 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         temperature=0.7,
         headers=OPENAI_EXTRA_HEADERS,
         messages=[
-            # {"role": "system", "content": system},
+            {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ]
     )
@@ -160,6 +171,8 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
     except AttributeError:
         return None, f"Malformed answer from API: {content}", 500
 
+    print('CONTENT FROM CODE:' + content)
+
     def extract_code(text):
         # Match triple backtick blocks first
         triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
@@ -172,6 +185,58 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
                 return single_match.group(1).strip()
 
     return extract_code(content), content.strip(), 200
+
+async def get_chat(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
+
+    prompt = f"""First, here is a history of what I asked you to do earlier. 
+    The actual prompt follows after ENDOFHISTORY. 
+    History:
+    {message_buffer.get_string()}
+    ENDOFHISTORY.
+    {user_prompt}
+    DO NOT GENERATE ANY CODE
+    Teacher mode: if the results return a link to a file that was generated, make sure to include the link in your answer.
+    """
+
+    print('PROMPT FROM CHAT:' + prompt)
+
+    if user_openai_key:
+        openai.api_key = user_openai_key
+
+    arguments = dict(
+        temperature=0.7,
+        headers=OPENAI_EXTRA_HEADERS,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": prompt},
+        ]
+    )
+
+    if openai.api_type == 'open_ai':
+        arguments["model"] = model
+    elif openai.api_type == 'azure':
+        arguments["deployment_id"] = model
+    else:
+        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
+
+    try:
+        result_GPT = openai.ChatCompletion.create(**arguments)
+
+        if 'error' in result_GPT:
+            raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
+
+        if result_GPT.choices[0].finish_reason == 'content_filter':
+            raise openai.APIError('Content Filter')
+
+    except openai.OpenAIError as e:
+        return None, f"Error from API: {e}", 500
+
+    try:
+        content = result_GPT.choices[0].message.content
+
+    except AttributeError:
+        return None, f"Malformed answer from API: {content}", 500
+    return content, 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
 log = logging.getLogger('werkzeug')
@@ -204,8 +269,11 @@ def models():
 @app.route('/api/<path:path>', methods=["GET", "POST"])
 def proxy_kernel_manager(path):
     if request.method == "POST":
+        print('starting code execution')
         resp = requests.post(
             f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
+        requestjson = request.get_json()
+        print(f"""started code execution with status: {resp.status_code} {requestjson}""")
     else:
         resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
 
@@ -213,7 +281,7 @@ def proxy_kernel_manager(path):
                         'content-length', 'transfer-encoding', 'connection']
     headers = [(name, value) for (name, value) in resp.raw.headers.items()
                if name.lower() not in excluded_headers]
-
+    
     response = Response(resp.content, resp.status_code, headers)
     return response
 
@@ -236,16 +304,16 @@ def download_file():
 @app.route('/inject-context', methods=['POST'])
 def inject_context():
     user_prompt = request.json.get('prompt', '')
-
-    # Append all messages to the message buffer for later use
+    print('INJECTING-CONTEXT:' + user_prompt)
     message_buffer.append(user_prompt + "\n\n")
-
+    print('message_buffer: ' + message_buffer.get_string())
     return jsonify({"result": "success"})
 
 
 @app.route('/generate', methods=['POST'])
 def generate_code():
     user_prompt = request.json.get('prompt', '')
+    print('ACTION:' + user_prompt)
     user_openai_key = request.json.get('openAIKey', None)
     model = request.json.get('model', None)
 
@@ -257,9 +325,31 @@ def generate_code():
     loop.close()
 
     # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
+    message_buffer.append('USER: ' + user_prompt + "\n\n")
 
     return jsonify({'code': code, 'text': text}), status
+
+
+@app.route('/chat', methods=['POST'])
+def generate_chat():
+    #all of this comes from the system, not the user!
+    user_prompt = request.json.get('prompt', '')
+    user_openai_key = request.json.get('openAIKey', None)
+    model = request.json.get('model', None)
+    print('CHAT_TEXT: ' + user_prompt)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    text, status = loop.run_until_complete(
+        get_chat(user_prompt, user_openai_key, model))
+    loop.close()
+
+    print('CHAT_TEXT: ' + text)
+
+    # Append all messages to the message buffer for later use
+    message_buffer.append('USER: ' + user_prompt + "\n\n")
+    print(f"""RETURNING TO UI: ${status}""")
+    return jsonify({'text': text}), status
 
 
 @app.route('/upload', methods=['POST'])

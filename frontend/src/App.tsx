@@ -37,16 +37,19 @@ function App() {
   );
 
   let [openAIKey, setOpenAIKey] = useLocalStorage<string>("OpenAIKey", "");
-
+  console.log("test")
+  console.error("test2")
+  console.info("test3")
+  console.debug("test4")
   let [messages, setMessages] = useState<Array<MessageDict>>(
     Array.from([
       {
-        text: "Hello! I'm a GPT Code assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
+        text: "Hello! I'm the Pleo GPT Code and Chat assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
         role: "generator",
         type: "message",
       },
       {
-        text: "If I get stuck just type 'reset' and I'll restart the kernel.",
+        text: "If I get stuck just type 'reset' and I'll restart the kernel. 2",
         role: "generator",
         type: "message",
       },
@@ -119,8 +122,9 @@ function App() {
 
       const data = await response.json();
       const code = data.code;
+     
 
-      addMessage({ text: data.text, type: "message", role: "generator" });
+      
 
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);
@@ -128,10 +132,14 @@ function App() {
       }
       
       if (!!code) {
+        await injectContext(`EXPERT: \n\n ${data.text} \n\n The code you asked for: \n\n ${data.code} \n\n I will now execute it and get back to you with a result and analysis.`)
         submitCode(code);
         setWaitingForSystem(WaitingStates.RunningCode);
+        addMessage({ text: data.text, type: "message", role: "generator" });
       } else {
+        await injectContext(`EXPERT: \n\n ${data.text} \n\n `)
         setWaitingForSystem(WaitingStates.Idle);
+        addMessage({ text: data.text, type: "message", role: "generator" });
       }
     } catch (error) {
       console.error(
@@ -142,20 +150,75 @@ function App() {
   };
 
   async function getApiData() {
+    
     if(document.hidden){
       return;
     }
-    
+    console.log("starting the check")
     let response = await fetch(`${Config.API_ADDRESS}/api`);
+    //console.log("response:", response)
     let data = await response.json();
-    data.results.forEach(function (result: {value: string, type: string}) {
+    for await (const result of data.results) {
+      if (result.value.trim().length === 0) {
+        continue;
+      }
+      if ((result.type === "message" || result.type === "message_raw") && result.value !== 'Kernel is ready.') {
+        console.error(`INJECTING DATA: ${result.value}`)
+        const chatResponse = await fetch(`${Config.WEB_ADDRESS}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: `Please answer my previous question(s) using the following which is the result the python you wrote. If the code was supposed to generate any visuals, make sure to write a description of them. Take into account what parts of the questions you have already answered. The results are coming in as the server completes the execution. Answer the part of the question that fits the results you are given now.
+              [Python code results]:
+              ${result.value}`,
+            model: selectedModel,
+            openAIKey: openAIKey,
+          }),
+        });
+
+        console.error('Response: ', chatResponse)
+        const data = await chatResponse.json();
+  
+        addMessage({ text: data.text, type: "message", role: "generator" });
+        setWaitingForSystem(WaitingStates.Idle);
+      } else {
+        addMessage({ text: result.value, type: result.type, role: "system" });
+        setWaitingForSystem(WaitingStates.Idle);
+      }
+    }
+    /*await data.results.forEach(async function (result: {value: string, type: string}) {
       if (result.value.trim().length == 0) {
         return;
       }
 
-      addMessage({ text: result.value, type: result.type, role: "system" });
-      setWaitingForSystem(WaitingStates.Idle);
-    });
+      if ((result.type === "message" || result.type === "message_raw") && result.value !== 'Kernel is ready.') {
+        console.error(`INJECTING DATA: ${result.value}`)
+        const chatResponse = await fetch(`${Config.WEB_ADDRESS}/chat`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: `Please answer my previous question(s) using the following which is the result the python you wrote. If the code was supposed to generate any visuals, make sure to write a description of them. Take into account what parts of the questions you have already answered. The results are coming in as the server completes the execution. Answer the part of the question that fits the results you are given now.
+              [Python code results]:
+              ${result.value}`,
+            model: selectedModel,
+            openAIKey: openAIKey,
+          }),
+        });
+
+        console.error('Response: ', chatResponse)
+        const data = await chatResponse.json();
+  
+        addMessage({ text: data.text, type: "message", role: "generator" });
+        setWaitingForSystem(WaitingStates.Idle);
+      } else {
+        addMessage({ text: result.value, type: result.type, role: "system" });
+        setWaitingForSystem(WaitingStates.Idle);
+      }
+    });*/
   }
 
   function completeUpload(message: string) {
@@ -170,6 +233,20 @@ function App() {
       },
       body: JSON.stringify({
         prompt: message,
+      }),
+    })
+      .then(() => {})
+      .catch((error) => console.error("Error:", error));
+  }
+
+  async function injectContext(context: string) {
+    await fetch(`${Config.WEB_ADDRESS}/inject-context`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: context,
       }),
     })
       .then(() => {})

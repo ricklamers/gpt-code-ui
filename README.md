@@ -1,3 +1,10 @@
+## FOR PLEO
+To build and run (assuming a lot of stuff) go for
+```
+chmod +x run.sh
+./run.sh
+```
+
 <img src="https://github.com/ricklamers/gpt-code-ui/assets/1309307/9ad4061d-2e26-4407-9431-109b650fb022" alt="GPT-Code logo" width=240 />
 
 An open source implementation of OpenAI's ChatGPT [Code interpreter](https://openai.com/blog/chatgpt-plugins#code-interpreter).

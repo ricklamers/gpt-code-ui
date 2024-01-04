@@ -11,10 +11,20 @@ export default function Sidebar(props: {
     <>
       <div className="sidebar">
         <div className="logo">
-            <AssistantIcon /> GPT-Code UI
-
+            <div className="wrapper">
+              <div className="header">
+                <AssistantIcon />
+              </div>
+              <div className="header">
+                <p className="headline">Code</p>
+                <p className="headline">Impact</p>
+              </div>
+            </div>
             <div className='github'>
-                <a href='https://github.com/ricklamers/gpt-code-ui'>Open Source - v{import.meta.env.VITE_APP_VERSION}</a>
+                Built with ❤️
+            </div>
+            <div className='github'>
+                using&nbsp;<a href='https://github.com/ricklamers/gpt-code-ui'>GPT-Code UI - v{import.meta.env.VITE_APP_VERSION}</a>
             </div>
         </div>
         <div className="settings">

@@ -15,6 +15,8 @@ from collections import defaultdict
 from flask_cors import CORS
 from flask import Flask, request, jsonify, send_from_directory, Response, session
 from dotenv import load_dotenv
+from foundry_dev_tools import FoundryRestClient
+from foundry_dev_tools.foundry_api_client import FoundryAPIError
 
 from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 from gpt_code_ui.kernel_program.config import NO_INTERNET_AVAILABLE
@@ -37,6 +39,8 @@ else:
 
 SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
+
+FOUNDRY_DATA_FOLDER = os.getenv("FOUNDRY_DATA_FOLDER", "/YOUR/FOUNDRY/FOLDER")
 
 
 class ChatHistory():
@@ -339,7 +343,64 @@ def upload_file(session_id):
         chat_history[session_id].upload_file(file.filename, file_info)
         return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
     else:
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({'message': 'File type not supported.'}), 400
+
+
+@app.route('/foundry_files', methods=['GET', 'POST'])
+@session_id_required
+def foundry_files(session_id, folder=None):
+    fc = FoundryRestClient()
+
+    if request.method == "POST":
+        req = request.get_json()
+        dataset_rid = req['dataset_rid']
+
+        # find out the workspace directory corresponding to the specific session
+        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/workdir/{session_id}')
+        if resp.status_code == 200:
+            workdir = resp.json()['result']
+        else:
+            return resp, resp.status_code
+
+        files = fc.download_dataset_files(dataset_rid, workdir)
+
+        results = []
+        http_code = 400
+        for file in files:
+            filename = os.path.relpath(file, workdir)
+
+            if allowed_file(file):
+                file_info = inspect_file(file)
+                chat_history[session_id].upload_file(filename, file_info)
+
+                results.append({'filename': filename, 'message': f'File {filename} downloaded successfully.\n{file_info}'})
+                http_code = 200
+            else:
+                results.append({'filename': filename, 'message': 'File type not supported.'})
+
+        return jsonify(results), http_code
+    else:
+        folder = request.args.get('folder', FOUNDRY_DATA_FOLDER)
+
+        try:
+            if folder.startswith('/'):
+                # this is a path - query the RID
+                folder_rid = fc.get_dataset_rid(folder)
+            else:
+                # this must be an RID - query the path
+                folder_rid, folder = folder, fc.get_dataset_path(folder)
+
+            files = fc.get_child_objects_of_folder(folder_rid)
+            return jsonify({
+                'folder': folder,
+                'folder_rid': folder_rid,
+                'datasets': [{
+                    'name': f['name'],
+                    'dataset_rid': f['rid']
+                } for f in files]
+            })
+        except FoundryAPIError:
+            return 'Folder not accessible', 404
 
 
 if __name__ == '__main__':

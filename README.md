@@ -72,6 +72,18 @@ DEBUG=1
 
 FOUNDRY_DATA_FOLDER="<YOUR FOUNDRY DATA FOLDER>"
 ```
+Then call
+```
+# build the frontend and inject it into the main application, you will need Node.js and Vite to be installed for this
+make compile_frontend
+
+# the following only required on recent MacOS, see https://stackoverflow.com/a/52230415/10984529
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
+# finally, run all required services
+python gpt_code_ui/main.py
+```
+This should open a browser window, navigating you to [http://localhost:8080](http://localhost:8080), where the application is running.
 
 ### Configurables
 Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.

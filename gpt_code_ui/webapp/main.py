@@ -56,7 +56,7 @@ class ChatHistory():
 Notes:
     First, think step by step what you want to do and write it down in English.
     Then generate valid Python code in a single code block.
-    Make sure all code is valid - it will Be run in a Jupyter Python 3 kernel environment.
+    Make sure all code is valid - it will be run in a Jupyter Python 3 kernel environment.
     Define every variable before you use it.
     For data processing, you can use
         'numpy', # numpy==1.24.3

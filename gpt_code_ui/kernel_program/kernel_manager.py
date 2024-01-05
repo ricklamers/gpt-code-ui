@@ -168,6 +168,8 @@ def create_venv(venv_dir: pathlib.Path, install_default_packages: bool) -> pathl
                 "rdkit>=2023.3.3",
                 "scipy==1.11.1",
                 "scikit-learn==1.3.0",
+                "folium>=0.15.0,<0.16.0",
+                "seaborn>=0.13.0,<0.14.0",
             ]
             subprocess.run([venv_python_executable, '-m', 'pip', 'install'] + default_packages)
 

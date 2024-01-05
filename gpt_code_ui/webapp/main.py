@@ -76,9 +76,11 @@ Notes:
         'pdfplumber', # pdfplumber==0.9.0
     For data visualization, you can use
         'matplotlib', # matplotlib==3.7.1
+        'seaborn', # seaborn==0.13.1
+        'folium', # folium==0.15.1
     For chemistry related tasks, you can use
         'rdkit', # rdkit>=2023.3.3
-    Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
+    Be sure to generate charts with matplotlib or seaborn. If you need geographical charts, use geopandas with the geopandas.datasets module or folium for creating maps.
     Do not use py3Dmol as it does not work. Use matplotlib instead, also for 3D structure plots of molecules.
     {  'Do not try to install additional packages as no internet connection is available. Do not include any "!pip install PACKAGE" commands.' if NO_INTERNET_AVAILABLE else
        'If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.'  }

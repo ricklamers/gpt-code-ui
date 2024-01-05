@@ -35,7 +35,9 @@ RUN pip install \
         "openpyxl>=3.1.2,<4" \
         "rdkit>=2023.3.3" \
         "scipy>=1.11.1" \
-        "scikit-learn>=1.3.0"
+        "scikit-learn>=1.3.0" \
+        "folium>=0.15.0,<0.16.0" \
+        "seaborn>=0.13.0,<0.14.0"
 
 RUN mkdir backendbuild
 WORKDIR /backendbuild

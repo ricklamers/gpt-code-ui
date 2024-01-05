@@ -23,9 +23,13 @@ from gpt_code_ui.kernel_program.config import NO_INTERNET_AVAILABLE, KERNEL_APP_
 
 load_dotenv('.env')
 
+openai.api_type = os.environ.get("OPENAI_API_TYPE")
 openai.api_version = os.environ.get("OPENAI_API_VERSION")
 openai.log = os.getenv("OPENAI_API_LOGLEVEL")
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
+
+if openai.api_type == "azure":
+    openai.api_base = os.environ.get("OPENAI_API_BASE")
 
 if openai.api_type == "open_ai":
     AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))

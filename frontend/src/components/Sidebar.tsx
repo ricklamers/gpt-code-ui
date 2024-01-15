@@ -19,22 +19,22 @@ export default function Sidebar(props: {
   onSelectModel: any;
 }) {
   let [demoDialogOpen, setDemoDialogOpen] = useState(false);
+  let [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(true);
 
   return (
     <>
       <Dialog
         open={demoDialogOpen}
         onClose={() => setDemoDialogOpen(false) }
-        fullWidth
-        maxWidth="xl"
+        maxWidth={false}
       >
         <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
           <FormControl fullWidth>
             <ReactPlayer
               url={demo_video}
               controls={true}
-              width="90vh"
-              height="50vh"
+              width="90vw"
+              height="min(50vw, 85vh)"
               playing
             />
           </FormControl>

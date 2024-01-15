@@ -8,4 +8,4 @@ To do this, you can specify in natural language how you want to analyze the data
 
 As we do not store or analyze prompts given to `CodeImpact`, we would be very happy to learn about how you successfully used the tool - either through the [Ensemble Community](https://teams.microsoft.com/l/team/19%3A95f77c7b5c414698b971a41a4a2e3402%40thread.skype/conversations?groupId=b2e24ac7-9338-4859-9d3a-d11888254461&tenantId=) or via [gdi@merckgroup.com](mailto:gdi@merckgroup.com?subject=CodeImpact%20Feedback). Also, any other kind of feedback is highly appreciated as this helps to further develop and improve our offerings. As `CodeImpact` is still under intense development, please expect short unavailability of the tool during updates without prior notification.
 
-For some ideas on what is possible with `CodeImpact`, see the demo video that is available through the sidebar on the left or the button below.
+For some ideas on what is possible with `CodeImpact`, see the demo video that is available through the sidebar on the left or by clicking the button below.

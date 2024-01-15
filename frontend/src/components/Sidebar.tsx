@@ -5,13 +5,17 @@ import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import ReactPlayer from 'react-player';
+import ReactMarkdown from 'react-markdown';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import logo from "../../public/assets/VM_VibrantMFilled09_Syellow_Sblue.svg";
 import demo_video from "../../public/assets/CodeImpact.mp4";
+import disclaimer from "../../public/assets/Disclaimer.md"
+
 
 export default function Sidebar(props: {
   models: Array<{ name: string; displayName: string }>;
@@ -53,6 +57,39 @@ export default function Sidebar(props: {
         </IconButton>
       </Dialog>
 
+      <Dialog
+        open={disclaimerDialogOpen}
+        onClose={() => setDisclaimerDialogOpen(false) }
+        maxWidth={false}
+      >
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
+          <FormControl fullWidth>
+            <ReactMarkdown children={disclaimer} />
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => {
+            setDisclaimerDialogOpen(false);
+            setDemoDialogOpen(true);
+          }}>
+            Demo Video
+          </Button>
+          <Button onClick={ () => setDisclaimerDialogOpen(false) } variant="contained">I understand</Button>
+        </DialogActions>
+        <IconButton
+          aria-label="close"
+          onClick={ () => setDisclaimerDialogOpen(false) }
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: '#ccc',
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </Dialog>
+
       <div className="sidebar">
         <div className="sidebarUpper">
           <div className="logo">
@@ -74,6 +111,7 @@ export default function Sidebar(props: {
           </div>
           <div className="documentation">
             <label className="header">Documentation</label>
+            <Button onClick={() => { setDisclaimerDialogOpen(true); }}>ReadMe</Button>
             <Button onClick={() => { setDemoDialogOpen(true); }}>Demo Video</Button>
           </div>
         </div>

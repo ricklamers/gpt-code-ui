@@ -66,6 +66,7 @@ Notes:
         'tabulate', # tabulate==0.9.0
         'scipy', # scipy==1.11.1
         'scikit-learn', # scikit-learn==1.3.0
+        'WordCloud', # wordcloud==1.9.3"
     For pdf extraction, you can use
         'PyPDF2', # PyPDF2==3.0.1
         'pdfminer', # pdfminer==20191125

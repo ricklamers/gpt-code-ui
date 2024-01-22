@@ -1,0 +1,3 @@
+[tool.mypy]
+files = "gpt_code_ui/**/*.py"
+ignore_missing_imports = true

@@ -1,48 +1,52 @@
-import subprocess
-import sys
-import pathlib
+import asyncio
 import json
 import logging
+import pathlib
+import subprocess
+import sys
+import threading
 import time
+from queue import Queue
 from typing import Dict
 
-import asyncio
-import threading
-
-from queue import Queue
-
-from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from dotenv import load_dotenv
-load_dotenv('.env')
+load_dotenv(".env")
 
-import gpt_code_ui.kernel_program.config as config
-import gpt_code_ui.kernel_program.utils as utils
+import gpt_code_ui.kernel_program.config as config  # noqa: E402
+import gpt_code_ui.kernel_program.utils as utils  # noqa: E402
 
 # Get global logger
 logger = config.get_logger()
 
 
 class KernelManager:
-    KERNEL_MANAGER_SCRIPT_PATH = pathlib.Path(__file__).parent.resolve() / 'kernel_manager.py'
+    KERNEL_MANAGER_SCRIPT_PATH = (
+        pathlib.Path(__file__).parent.resolve() / "kernel_manager.py"
+    )
 
     def __init__(self, session_id: str):
         self._session_id = session_id
-        self._workdir = config.KERNEL_BASE_DIR / f'kernel.{self._session_id}'
-        print(f'Creating kernel {session_id} inside {self._workdir}')
-        self._result_queue = Queue()
-        self._send_queue = Queue()
+        self._workdir = config.KERNEL_BASE_DIR / f"kernel.{self._session_id}"
+        print(f"Creating kernel {session_id} inside {self._workdir}")
+        self._result_queue: Queue[Dict[str, str]] = Queue()
+        self._send_queue: Queue[Dict[str, str]] = Queue()
 
         self._status = "starting"
-        self._result_queue.put({"value": "Starting Kernel...", "type": "message_status"})
+        self._result_queue.put(
+            {"value": "Starting Kernel...", "type": "message_status"}
+        )
 
-        self._process = subprocess.Popen([
-            sys.executable,
-            KernelManager.KERNEL_MANAGER_SCRIPT_PATH,
-            self._session_id,
-            self._workdir,
-        ])
+        self._process = subprocess.Popen(
+            [
+                sys.executable,
+                KernelManager.KERNEL_MANAGER_SCRIPT_PATH,
+                self._session_id,
+                self._workdir,
+            ]
+        )
 
     @property
     def status(self):
@@ -52,10 +56,10 @@ class KernelManager:
         self._status = status
 
     def __del__(self):
-        print(f'Killing kernel {self._session_id}')
-        self._status = 'stopping'
+        print(f"Killing kernel {self._session_id}")
+        self._status = "stopping"
         self._process.terminate()
-        self._status = 'stopped'
+        self._status = "stopped"
 
     def on_recv(self, message):
         if message["type"] == "status":
@@ -65,9 +69,15 @@ class KernelManager:
             if self.status == "ready":
                 message["value"] = "Kernel is ready."
             else:
-                raise ValueError(f'Unexpected status_message {self.status}')
+                raise ValueError(f"Unexpected status_message {self.status}")
 
-        elif message["type"] in ["message", "message_raw", "message_error", "image/png", "image/jpeg"]:
+        elif message["type"] in [
+            "message",
+            "message_raw",
+            "message_error",
+            "image/png",
+            "image/jpeg",
+        ]:
             pass
 
         else:
@@ -86,7 +96,7 @@ class KernelManager:
 
     @property
     def workdir(self) -> str:
-        return self._workdir
+        return str(self._workdir)
 
     @property
     def session_id(self) -> str:
@@ -98,11 +108,11 @@ kernel_managers_lock = threading.Lock()
 messaging = None
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
-log = logging.getLogger('werkzeug')
+log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
-cli = sys.modules['flask.cli']
-cli.show_server_banner = lambda *x: None
+cli = sys.modules["flask.cli"]
+cli.show_server_banner = lambda *x: None  # type: ignore
 
 app = Flask(__name__)
 CORS(app)
@@ -127,7 +137,7 @@ async def start_snakemq():
         while True:
             for session_id, kernel in kernel_managers.items():
                 for message in kernel.get_messages():
-                    print(f'Sending {message} to {session_id}.')
+                    print(f"Sending {message} to {session_id}.")
                     utils.send_json(messaging, message, session_id)
             time.sleep(0.1)
 
@@ -172,7 +182,7 @@ def handle_request(session_id: str):
         # Handle GET requests by sending everything that is in the receive_queue
         return jsonify({"results": km.get_results(), "status": km.status})
     elif request.method == "POST":
-        km.execute(request.json['command'])
+        km.execute(request.json["command"])
         return jsonify({"result": "success", "status": km.status})
 
 
@@ -181,7 +191,7 @@ def handle_status(session_id: str):
     km = _get_kernel_manager(session_id)
 
     if request.method == "POST":
-        km.set_status(request.json['status'])
+        km.set_status(request.json["status"])
 
     return jsonify({"result": "success", "status": km.status})
 

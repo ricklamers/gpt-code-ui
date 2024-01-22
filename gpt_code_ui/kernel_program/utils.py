@@ -1,9 +1,10 @@
-import re
 import json
+import re
+
 import snakemq.link
-import snakemq.packeter
-import snakemq.messaging
 import snakemq.message
+import snakemq.messaging
+import snakemq.packeter
 
 import gpt_code_ui.kernel_program.config as config
 

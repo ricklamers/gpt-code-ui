@@ -8,7 +8,7 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
 ## User interface
 ![User Interface](UserInterface.png)
- 
+
 ## Features
 - File upload
 - File download

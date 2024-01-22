@@ -36,7 +36,7 @@ steps:
       import requests
       import os
       import json
-      
+
       ado_org = os.getenv("ADO_ORG_URI").replace('https://dev.azure.com/', '').replace('/', '')
       print(f"{ado_org=}")
       ado_project = os.getenv("ADO_PROJECT")
@@ -64,9 +64,9 @@ steps:
       print(f"{pip_extra_index_url=}")
 
       response = requests.post(token_vending_machine_url,
-      json={"token": os.getenv("SYSTEM_ACCESSTOKEN"), 
-      "app_id": app_id, 
-      "app_name": app_name, 
+      json={"token": os.getenv("SYSTEM_ACCESSTOKEN"),
+      "app_id": app_id,
+      "app_name": app_name,
       "ado_org": ado_org,
       "ado_project": ado_project,
       "user": os.getenv("BUILD_REQUESTEDFOREMAIL")})

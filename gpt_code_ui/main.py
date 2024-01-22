@@ -3,16 +3,15 @@
 # webapp is a Flask app (in webapp/main.py relative to this main.py)
 # kernel_program is a Python script (in kernel_program/main.py relative to this main.py)
 
-import sys
-import logging
 import asyncio
+import logging
+import sys
 import time
 import webbrowser
-
 from multiprocessing import Process
 
-from gpt_code_ui.webapp.main import app, APP_PORT
 from gpt_code_ui.kernel_program.main import main as kernel_program_main
+from gpt_code_ui.webapp.main import APP_PORT, app
 
 APP_URL = "http://localhost:%s" % APP_PORT
 
@@ -55,10 +54,12 @@ def print_color(text, color="gray"):
 
 
 def print_banner():
-    print("""
+    print(
+        """
 █▀▀ █▀█ ▀█▀ ▄▄ █▀▀ █▀█ █▀▄ █▀▀
 █▄█ █▀▀ ░█░ ░░ █▄▄ █▄█ █▄▀ ██▄
-    """)
+    """
+    )
 
     print("> Open GPT-Code UI in your browser %s" % APP_URL)
     print("")
@@ -66,7 +67,9 @@ def print_banner():
     print("")
     print("Find your OpenAI API key at https://platform.openai.com/account/api-keys")
     print("")
-    print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")
+    print_color(
+        "Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui"
+    )
 
 
 def main():
@@ -107,5 +110,5 @@ def main():
         print("Processes terminated.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

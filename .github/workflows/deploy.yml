@@ -1,0 +1,47 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  extract_environment:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.extract_environment.outputs.environment }}
+    steps:
+      - name: Extract Environment
+        run: |
+          if [ ${GITHUB_REF} == "refs/heads/main" ]; then
+            echo "##[set-output name=environment;]$(echo "prd")"
+          elif [ ${GITHUB_REF} == "refs/heads/stg" ]; then
+            echo "##[set-output name=environment;]$(echo "stg")"
+          fi
+        id: extract_environment
+
+  deploy-docker:
+    needs: [extract_environment]
+    runs-on:
+      [self-hosted, '${{ needs.extract_environment.outputs.environment }}']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Update Pip
+        run: |
+          pip3 install --upgrade pip
+      - name: Install Requirements
+        run: pip3 install -r deploy_requirements.txt
+
+      - name: Configure AWS Region
+        uses: aws-actions/configure-aws-credentials@v1
+        id: aws
+        with:
+          aws-region: us-east-1
+
+      - name: Run Deploy Docker
+        env:
+          ENVIRONMENT: ${{ needs.extract_environment.outputs.environment }}
+          APPLICATION: gpt-code-ui
+          BUCKET_SSH_KEYS_NAME: ssh-keys-${{ needs.extract_environment.outputs.environment }}-${{ steps.aws.outputs.aws-account-id }}
+        run: python3 deploy_docker.py

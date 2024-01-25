@@ -1,4 +1,4 @@
-import AssistantIcon from '@mui/icons-material/Assistant';
+import AssistantIcon from "@mui/icons-material/Assistant";
 
 import "./Sidebar.css";
 
@@ -19,29 +19,30 @@ export default function Sidebar(props: {
     <>
       <div className="sidebar">
         <div className="logo">
-            <AssistantIcon /> GPT-Code UI
-
-            <div className='github'>
-                <a href='https://github.com/ricklamers/gpt-code-ui'>Open Source - v{import.meta.env.VITE_APP_VERSION}</a>
-            </div>
+          <AssistantIcon /> Dadosfera
+          <div className="github">
+            <a href="https://github.com/ricklamers/gpt-code-ui">
+              Open Source - v{import.meta.env.VITE_APP_VERSION}
+            </a>
+          </div>
         </div>
         <div className="settings">
-            <label className="header">Settings</label>
-            <label>Model</label>
-            <select
+          <label className="header">Settings</label>
+          <label>Model</label>
+          <select
             value={props.selectedModel}
             onChange={(event) => props.onSelectModel(event.target.value)}
-            >
+          >
             {props.models.map((model, index) => {
-                return (
+              return (
                 <option key={index} value={model.name}>
-                    {model.displayName}
+                  {model.displayName}
                 </option>
-                );
+              );
             })}
-            </select>
-            <label>Credentials</label>
-            <button onClick={handleOpenAIButtonClick}>Set OpenAI key</button>
+          </select>
+          <label>Credentials</label>
+          <button onClick={handleOpenAIButtonClick}>Set OpenAI key</button>
         </div>
       </div>
     </>

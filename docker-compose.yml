@@ -1,14 +1,14 @@
 version: "3"
 
 services:
-  # nginx:
-  #   image: nginx:latest
-  #   ports:
-  #     - 80:80
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf
-  #   depends_on:
-  #     - web
+  nginx:
+    image: nginx:latest
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - web
 
   web:
     build:
@@ -16,5 +16,3 @@ services:
     command: gptcode
     expose:
       - 8080
-    ports:
-      - "8080:8080"

@@ -23,7 +23,7 @@ setup(
         "foundry-dev-tools>=1.3",
         "python-dotenv>=0.18,<2",
         "pandas>=1.3,<2",
-        "openai>=0.25,<1",
+        "openai>=1.0.0,<2",
     ],
     entry_points={
         "console_scripts": [

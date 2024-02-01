@@ -10,7 +10,6 @@ from collections import defaultdict
 from functools import wraps
 from typing import Dict
 
-import openai
 import pandas as pd
 import pandas.api.types as pd_types
 import requests
@@ -19,35 +18,14 @@ from flask import Flask, Response, jsonify, request, send_from_directory, sessio
 from flask_cors import CORS
 from foundry_dev_tools import FoundryRestClient
 from foundry_dev_tools.foundry_api_client import FoundryAPIError
-
+from gpt_code_ui.webapp import llm
 from gpt_code_ui.kernel_program.config import KERNEL_APP_PORT, NO_INTERNET_AVAILABLE
 
 load_dotenv(".env")
 
-openai.api_version = os.environ.get("OPENAI_API_VERSION")
-openai.log = os.getenv("OPENAI_API_LOGLEVEL")
-OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
-
-if openai.api_type == "open_ai":
-    AVAILABLE_MODELS = json.loads(
-        os.environ.get(
-            "OPENAI_MODELS",
-            """[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]""",
-        )
-    )
-elif openai.api_type == "azure":
-    try:
-        AVAILABLE_MODELS = json.loads(os.environ["AZURE_OPENAI_DEPLOYMENTS"])
-    except KeyError as e:
-        raise RuntimeError(
-            "AZURE_OPENAI_DEPLOYMENTS environment variable not set"
-        ) from e
-else:
-    raise ValueError(f"Invalid OPENAI_API_TYPE: {openai.api_type}")
-
+AVAILABLE_MODELS = llm.get_available_models()
 SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
-
 FOUNDRY_DATA_FOLDER = os.getenv(
     "FOUNDRY_DATA_FOLDER", "/Group Functions/mgf-use-case-gpt-code-ui/data"
 )
@@ -218,56 +196,29 @@ The table has {len(df.index)} rows. The first {NUM_SAMPLE_ROWS} rows read
         return ""  # file reading failed. - Don't want to know why.
 
 
-async def get_code(messages, model="gpt-3.5-turbo"):
-    arguments = dict(
-        temperature=0.7,
-        headers=OPENAI_EXTRA_HEADERS,
-        messages=messages,
-    )
-
-    if openai.api_type == "open_ai":
-        arguments["model"] = model
-    elif openai.api_type == "azure":
-        arguments["deployment_id"] = model
+async def get_code(messages, model="openai/gpt-3.5-turbo"):
+    try:
+        content = llm.call(messages, model=model)
+    except RuntimeError as e:
+        return None, str(e), 500
     else:
-        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
 
-    try:
-        result_GPT = openai.ChatCompletion.create(**arguments)
-
-        if "error" in result_GPT:
-            raise openai.APIError(
-                code=result_GPT.error.code, message=result_GPT.error.message
+        def extract_code(text):
+            # Match triple backtick blocks first
+            triple_match = re.search(
+                r"```(?:(?:[^\r\n]*[pP]ython[^\r\n]*[\r\n])|(?:\w+\n))?(.+?)```",
+                text,
+                re.DOTALL,
             )
+            if triple_match:
+                return triple_match.group(1).strip()
+            else:
+                # If no triple backtick blocks, match single backtick blocks
+                single_match = re.search(r"`(.+?)`", text, re.DOTALL)
+                if single_match:
+                    return single_match.group(1).strip()
 
-        if result_GPT.choices[0].finish_reason == "content_filter":
-            raise openai.APIError("Content Filter")
-
-    except openai.OpenAIError as e:
-        return None, f"Error from API: {e}", 500
-
-    try:
-        content = result_GPT.choices[0].message.content
-
-    except AttributeError:
-        return None, f"Malformed answer from API: {content}", 500
-
-    def extract_code(text):
-        # Match triple backtick blocks first
-        triple_match = re.search(
-            r"```(?:(?:[^\r\n]*[pP]ython[^\r\n]*[\r\n])|(?:\w+\n))?(.+?)```",
-            text,
-            re.DOTALL,
-        )
-        if triple_match:
-            return triple_match.group(1).strip()
-        else:
-            # If no triple backtick blocks, match single backtick blocks
-            single_match = re.search(r"`(.+?)`", text, re.DOTALL)
-            if single_match:
-                return single_match.group(1).strip()
-
-    return extract_code(content), content.strip(), 200
+        return extract_code(content), content.strip(), 200
 
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger

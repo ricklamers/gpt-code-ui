@@ -24,15 +24,21 @@ See the [Dockerfile](Dockerfile) for details. Most notably, we do not invoke the
 In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
 ```
 {
-  "OPENAI_API_KEY": "33 ... e8",
-  "OPENAI_API_BASE": "$APP_SERVICE_NLP_API_URL",
-  "OPENAI_API_TYPE": "azure",
-  "OPENAI_API_VERSION": "2023-06-01-preview",
-  "AZURE_OPENAI_DEPLOYMENTS": [
-    {"displayName": "GPT-3.5 0301", "name": "gpt-35-turbo-0301"},
-    {"displayName": "GPT-3.5 0613", "name": "gpt-35-turbo-0613"},
-    {"displayName": "GPT-3.5 16k", "name": "gpt-35-turbo-16k"},
-    {"displayName": "GPT-4 0314", "name": "gpt-4-0314"}
+  "AZURE_API_KEY": "721...bb78",
+  "AZURE_API_BASE": "https://api.nlp.dev.uptimize.merckgroup.com",
+  "AZURE_API_VERSION": "2023-09-01-preview",
+
+  "OPENAI_API_KEY": "sk-INVALID",
+  "OPENAI_API_VERSION": "2023-09-01-preview",
+
+  "BEDROCK_GATEWAY_API_KEY": "7278...b14f",
+  "BEDROCK_GATEWAY_API_BASE": "https://api.nlp.dev.uptimize.merckgroup.com/model",
+
+  "AVAILABLE_MODELS": [
+    {"displayName": "GPT-3.5 16k", "name": "azure/gpt-35-turbo-16k"},
+    {"displayName": "GPT-3.5 0613", "name": "azure/gpt-35-turbo-0613"},
+    {"displayName": "Claude v1", "name": "bedrock_gateway/anthropic.claude-instant-v1"},
+    {"displayName": "Claude v2", "name": "bedrock_gateway/anthropic.claude-v2"}
   ],
 
   "API_PORT": 5010,
@@ -44,9 +50,11 @@ In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
   "SESSION_ENCRYPTION_KEY": "67ed8ea0-05f0-4086-9a54-6b2bb6dbcf29",
 
   "DEBUG": 1,
+  "OPENAI_API_LOGLEVEL": "debug",
 
   "FOUNDRY_DATA_FOLDER": "/Group Functions/mgf-use-case-gpt-code-ui/data"
 }
+
 ```
 
 ### Running locally
@@ -54,22 +62,28 @@ For local execution, your `.env` could read similar to
 ```
 REQUESTS_CA_BUNDLE="/Users/m290886/Projects/technology_repository/merck_cacert_v1.pem"
 
-OPENAI_API_KEY="33 ... e8"
-OPENAI_API_BASE="https://mygpt-api.nlp.dev.uptimize.merckgroup.com"
-OPENAI_API_TYPE="azure"
-OPENAI_API_VERSION="2023-06-01-preview"
-AZURE_OPENAI_DEPLOYMENTS=[{"displayName": "GPT-3.5", "name": "gpt-35-turbo-0613"}, {"displayName": "GPT-3.5 16k", "name": "gpt-35-turbo-16k"}, {"displayName": "GPT-4 0314", "name": "gpt-4-0314"}, {"displayName": "GPT-4 0613", "name": "gpt-4-0613"}, {"displayName": "GPT-4 32k", "name": "gpt-4-32k"}, {"displayName": "GPT-4 32k 0613", "name": "gpt-4-32k-0613"}]
-# OPENAI_API_LOGLEVEL=debug
+AZURE_API_KEY=XXXX
+AZURE_API_BASE=https://your-resource-name.openai.azure.com
+AZURE_API_VERSION=2023-09-01-preview
+
+OPENAI_API_KEY=sk-XXXX
+OPENAI_API_VERSION=2023-09-01-preview
+
+BEDROCK_GATEWAY_API_KEY=YYYY
+BEDROCK_GATEWAY_API_BASE=https://your-gateway-url.com
+
+AVAILABLE_MODELS=[{"displayName": "GPT-3.5 16k", "name": "azure/gpt-35-turbo-16k"}, {"displayName": "GPT-3.5 0613", "name": "azure/gpt-35-turbo-0613"}, {"displayName": "Claude v1", "name": "bedrock_gateway/anthropic.claude-instant-v1"}, {"displayName": "Claude v2", "name": "bedrock_gateway/anthropic.claude-v2"}]
 
 API_PORT=5010
 WEB_PORT=8080
 SNAKEMQ_PORT=8765
 
-NO_INTERNET_AVAILABLE=1
-
-SESSION_ENCRYPTION_KEY="67ed8ea0-05f0-4086-9a54-6b2bb6dbcf29"
+SESSION_ENCRYPTION_KEY="<SECRET_KEY>"
 
 DEBUG=1
+NO_INTERNET_AVAILABLE=0
+OPENAI_API_LOGLEVEL=debug
+FOUNDRY_DATA_FOLDER=/Path/To/Folder/data
 ```
 
 ### Configurables

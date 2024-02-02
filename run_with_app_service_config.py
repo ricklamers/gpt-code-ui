@@ -17,7 +17,7 @@ for key, value in config.items():
                 value = os.environ[value[1:]]
             except KeyError:
                 print(
-                    f"Failed to resolve environment variable {value}. Keepting the reference in the env."
+                    f"Failed to resolve environment variable {value}. Keeping the reference in the env."
                 )
 
         sub_env[key] = value

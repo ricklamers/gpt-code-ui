@@ -1,5 +1,5 @@
 import "./Sidebar.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
@@ -24,6 +24,17 @@ export default function Sidebar(props: {
 }) {
   let [demoDialogOpen, setDemoDialogOpen] = useState(false);
   let [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(true);
+
+  useEffect(() => {
+    if (props.models.length) {
+        if (undefined === props.models.find(e => e.name === props.selectedModel)) {
+          props.onSelectModel(props.models[0].name);
+        } else {
+          props.onSelectModel(props.selectedModel);
+        }
+      }
+  }, [props.models]);
+
 
   return (
     <>
@@ -126,12 +137,13 @@ export default function Sidebar(props: {
               labelId="model-select-label"
               id="simple-select"
               value={props.selectedModel}
+              defaultValue={props.selectedModel}
               label="Model"
               onChange={(event: SelectChangeEvent) => props.onSelectModel(event.target.value as string)}
               >
-              {props.models.map((model, index) => {
+              {props.models.map(model => {
                   return (
-                  <MenuItem key={index} value={model.name}>
+                  <MenuItem value={model.name}>
                       {model.displayName}
                   </MenuItem>
                   );

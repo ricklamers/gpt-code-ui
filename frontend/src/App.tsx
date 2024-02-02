@@ -28,7 +28,7 @@ function App() {
       onSuccess: () => { setMessages(DEFAULT_MESSAGES); }},
   };
 
-  let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-35-turbo-0613"}]);
+  let [MODELS, setModels] = useState<{displayName: string, name: string}[]>([]);
 
   useEffect(() => {
     const getModels = async () => {
@@ -46,7 +46,7 @@ function App() {
 
   let [selectedModel, setSelectedModel] = useLocalStorage<string>(
     "model",
-    MODELS[0].name
+    "gpt-3.5-turbo"
   );
 
   let [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)

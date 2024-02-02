@@ -251,8 +251,8 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
           });
         } else {
           const msg = await response.text();
-          addMessage({ text: `Downloading dataset ${dataset_rid} failed with status code ${response.status}: ${msg}.
-Likely, you need to request access to the <a href="https://palantir.mcloud.merckgroup.com/workspace/hubble/exploration?objectId=ri.phonograph2-objects.main.object.5178b067-0753-49b5-bf1b-7c83b8323b6e" target="_blank">Code Impact use case</a>.`, type: "message", role: "upload" });
+          addMessage({ text: `Downloading dataset <a href="https://palantir.mcloud.merckgroup.com/workspace/hubble/exploration?objectId=${dataset_rid}" target="_blank">${dataset_rid}</a> failed with status code ${response.status}: ${msg}.
+Likely, you only have Discoverer role but need at least Reader role in the <a href="https://palantir.mcloud.merckgroup.com/workspace/compass/view/${foundryFolder}" target="_blank">specified folder</a>.`, type: "message", role: "upload" });
           console.log(response);
         }
       } catch (e) {

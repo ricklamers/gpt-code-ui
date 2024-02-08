@@ -54,7 +54,7 @@ def start_snakemq(kc, kernel_id):
 
             if message["type"] == "execute":
                 logger.debug("Executing command: %s" % message["value"])
-                kc.execute(message["value"])
+                kc.execute(message["value"], allow_stdin=False)
                 # Try direct flush with default wait (0.2)
                 flush_kernel_msgs(kc)
 

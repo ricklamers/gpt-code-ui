@@ -59,13 +59,16 @@ def call(messages, model: str = "openai/gpt-3.5-turbo"):
                 **arguments,
             )
 
-            if "error" in result_GPT:
-                raise openai.APIError(
-                    code=result_GPT.error.code, message=result_GPT.error.message
+            if hasattr(result_GPT, "error") and result_GPT.error is not None:
+                raise RuntimeError(
+                    f"Error: {result_GPT.error['code']}, Message: {result_GPT.error['message']}"
                 )
 
+            if result_GPT.choices is None:
+                raise RuntimeError(f"Malformed answer from API: {result_GPT}")
+
             if result_GPT.choices[0].finish_reason == "content_filter":
-                raise openai.APIError("Content Filter")
+                raise RuntimeError("Content Filter")
 
         except openai.OpenAIError as e:
             raise RuntimeError(f"Error from API: {e}") from e

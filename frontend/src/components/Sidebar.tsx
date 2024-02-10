@@ -1,6 +1,9 @@
 import "./Sidebar.css";
 import { useState, useEffect } from "react";
 import InputLabel from '@mui/material/InputLabel';
+import Box from '@mui/material/Box';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Chip from '@mui/material/Chip';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
@@ -21,9 +24,15 @@ export default function Sidebar(props: {
   models: Array<{ name: string; displayName: string }>;
   selectedModel: string;
   onSelectModel: any;
+  toggledOptions: string[];
+  onToggledOptions: any;
 }) {
   let [demoDialogOpen, setDemoDialogOpen] = useState(false);
   let [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(true);
+
+  const options: Array<{ name: string; displayName: string }> = [
+    {name: 'svg', displayName: 'Vector Graphics'},
+  ];
 
   useEffect(() => {
     if (props.models.length) {
@@ -131,7 +140,35 @@ export default function Sidebar(props: {
         <div className="sidebarLower">
           <div className="settings">
             <label className="header">Settings</label>
-            <FormControl fullWidth>
+            <FormControl fullWidth className="setting">
+              <InputLabel id="options-select-label">Options</InputLabel>
+              <Select
+              labelId="options-select-label"
+              id="options-select"
+              multiple
+              value={props.toggledOptions}
+              defaultValue={props.toggledOptions}
+              label="Options"
+              onChange={(event: SelectChangeEvent<typeof props.toggledOptions>) => props.onToggledOptions(typeof event.target.value === 'string' ? event.target.value.split(',') : event.target.value)}
+              input={<OutlinedInput id="select-multiple-chip" label="Chip" />}
+              renderValue={(selected) => (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {selected.map((value) => (
+                    <Chip key={value} label={options.find(x => x.name === value)?.displayName} />
+                  ))}
+                </Box>
+              )}
+              >
+              {options.map(option => {
+                  return (
+                  <MenuItem value={option.name}>
+                      {option.displayName}
+                  </MenuItem>
+                  );
+              })}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth className="setting">
               <InputLabel id="model-select-label">Model</InputLabel>
               <Select
               labelId="model-select-label"

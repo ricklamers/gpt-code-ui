@@ -49,6 +49,8 @@ function App() {
     "gpt-3.5-turbo"
   );
 
+  let [toggledOptions, setToggledOptions] = React.useState<string[]>(['svg', ]);
+
   let [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
   let [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
 
@@ -106,7 +108,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ command: code }),
+      body: JSON.stringify({ command: code, options: toggledOptions }),
     })
       .then(() => {})
       .catch((error) => console.error("Error:", error));
@@ -310,6 +312,10 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           selectedModel={selectedModel}
           onSelectModel={(val: string) => {
             setSelectedModel(val);
+          }}
+          toggledOptions={toggledOptions}
+          onToggledOptions={(val: string[]) => {
+            setToggledOptions(val);
           }}
         />
         <div className="main">

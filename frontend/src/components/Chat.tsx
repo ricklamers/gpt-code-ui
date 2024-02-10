@@ -105,6 +105,9 @@ function Message(props: {
         {props.type == "image/jpeg" &&
           <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/jpeg;base64,${text}' />` }}></div>
         }
+        {props.type == "image/svg+xml" &&
+          <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `${text}` }}></div>
+        }
       </div>
     </div>
   );

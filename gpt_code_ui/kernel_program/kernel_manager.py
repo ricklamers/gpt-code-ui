@@ -53,8 +53,29 @@ def start_snakemq(kc, kernel_id):
             message = json.loads(message.data.decode("utf-8"))
 
             if message["type"] == "execute":
-                logger.debug("Executing command: %s" % message["value"])
-                kc.execute(message["value"], allow_stdin=False)
+                command = message["value"]
+                logger.debug("Executing command: %s" % command)
+
+                code = command.get("command", "")
+                options = command.get("options", [])
+
+                if "svg" in options:
+                    code = f"""%matplotlib inline
+import matplotlib_inline
+matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
+del matplotlib_inline
+import matplotlib.pyplot as plt
+plt.rcParams['svg.fonttype'] = 'none'
+del plt
+{code}"""
+                else:
+                    code = f"""%matplotlib inline
+import matplotlib_inline
+matplotlib_inline.backend_inline.set_matplotlib_formats('png')
+del matplotlib_inline
+{code}"""
+
+                kc.execute(code, allow_stdin=False)
                 # Try direct flush with default wait (0.2)
                 flush_kernel_msgs(kc)
 
@@ -92,6 +113,8 @@ def start_flusher(kc):
 
 
 def send_message(message, message_type="message"):
+    global messaging
+
     utils.send_json(
         messaging, {"type": message_type, "value": message}, config.IDENT_MAIN
     )
@@ -119,6 +142,10 @@ def flush_kernel_msgs(kc, tries=1, timeout=0.2):
                     elif "image/jpeg" in content_data:
                         send_message(
                             content_data["image/jpeg"], message_type="image/jpeg"
+                        )
+                    elif "image/svg+xml" in content_data:
+                        send_message(
+                            content_data["image/svg+xml"], message_type="image/svg+xml"
                         )
                     elif "text/plain" in content_data:
                         send_message(

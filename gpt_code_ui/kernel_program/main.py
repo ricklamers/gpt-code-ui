@@ -69,7 +69,7 @@ class KernelManager:
             if self.status == "ready":
                 message["value"] = "Kernel is ready."
             else:
-                raise ValueError(f"Unexpected status_message {self.status}")
+                logger.debug(f"Unexpected status_message {self.status}")
 
         elif message["type"] in [
             "message",
@@ -77,11 +77,12 @@ class KernelManager:
             "message_error",
             "image/png",
             "image/jpeg",
+            "image/svg+xml",
         ]:
             pass
 
         else:
-            raise ValueError(f'Unexpected message type {message["type"]}')
+            logger.debug(f'Unexpected message type {message["type"]}')
 
         self._result_queue.put({"value": message["value"], "type": message["type"]})
 
@@ -182,7 +183,7 @@ def handle_request(session_id: str):
         # Handle GET requests by sending everything that is in the receive_queue
         return jsonify({"results": km.get_results(), "status": km.status})
     elif request.method == "POST":
-        km.execute(request.json["command"])
+        km.execute(request.json)
         return jsonify({"result": "success", "status": km.status})
 
 

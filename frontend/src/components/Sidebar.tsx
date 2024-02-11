@@ -12,6 +12,8 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
+import CancelIcon from "@mui/icons-material/Cancel";
+import CheckIcon from "@mui/icons-material/Check";
 import ReactPlayer from 'react-player';
 import ReactMarkdown from 'react-markdown';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
@@ -154,15 +156,32 @@ export default function Sidebar(props: {
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {selected.map((value) => (
-                    <Chip key={value} label={options.find(x => x.name === value)?.displayName} />
+                    <Chip
+                      key={value}
+                      label={options.find(x => x.name === value)?.displayName}
+                      onDelete={() => props.onToggledOptions(
+                        props.toggledOptions.filter((item) => item !== value)
+                      )
+                    }
+                    deleteIcon={
+                      <CancelIcon
+                        onMouseDown={(event) => event.stopPropagation()}
+                      />
+                    }
+                    />
                   ))}
                 </Box>
               )}
               >
               {options.map(option => {
                   return (
-                  <MenuItem value={option.name}>
+                  <MenuItem
+                    key={option.name}
+                    value={option.name}
+                    sx={{ justifyContent: "space-between" }}
+                  >
                       {option.displayName}
+                      {props.toggledOptions.includes(option.name) ? <CheckIcon color="info" /> : null}
                   </MenuItem>
                   );
               })}

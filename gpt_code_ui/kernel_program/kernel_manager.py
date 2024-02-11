@@ -67,6 +67,12 @@ del matplotlib_inline
 import matplotlib.pyplot as plt
 plt.rcParams['svg.fonttype'] = 'none'
 del plt
+import warnings
+warnings.filterwarnings("ignore", message="Glyph.*missing from current font.")
+del warnings
+import logging
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+del logging
 {code}"""
                 else:
                     code = f"""%matplotlib inline

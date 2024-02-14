@@ -55,7 +55,7 @@ def call(messages, model: str = "openai/gpt-3.5-turbo"):
 
         try:
             result_GPT = client.chat.completions.create(
-                model="gpt-35-turbo-0613",
+                model=model,
                 **arguments,
             )
 

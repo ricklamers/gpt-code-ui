@@ -136,8 +136,8 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
 
   const sendMessage = async (userInput: string) => {
     try {
-      if(userInput in COMMANDS) {
-        handleCommand(COMMANDS[userInput as keyof typeof COMMANDS])
+      if(userInput.toLowerCase() in COMMANDS) {
+        handleCommand(COMMANDS[userInput.toLowerCase() as keyof typeof COMMANDS])
         return;
       }
 

@@ -3,14 +3,23 @@ import Input from "./components/Input";
 import Sidebar from "./components/Sidebar";
 import Chat, { WaitingStates } from "./components/Chat";
 import React, { useState, useEffect } from "react";
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import Config from "./config";
 import { useLocalStorage } from "usehooks-ts";
+import { v4 as uuidv4 } from 'uuid';
 
 export type MessageDict = {
   text: string;
   role: string;
   type: string;
 };
+
+let tabID = 'undefined';
 
 function App() {
   // map from user command to kernel api endpoint, info message, etc.
@@ -98,6 +107,32 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
     },
   ]);
 
+  useEffect(() => {
+    tabID = uuidv4();
+  }, []);
+
+  let [otherTabDetected, setOtherTabDetected] = useState(false);
+
+  const channel = new BroadcastChannel('cross-tab-communication');
+  channel.addEventListener('message', (msg) => {
+    if (msg.data.type == 'new tab') {
+      setOtherTabDetected(msg.data.id != tabID);
+    }
+  });
+
+  const continueSession = () => {
+    channel.postMessage({
+      type: 'new tab',
+      id: tabID,
+    });
+  };
+
+  useEffect(() => {
+    continueSession();
+  }, []);
+
+
+
   let [messages, setMessages] = useState<MessageDict[]>(DEFAULT_MESSAGES);
   let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
@@ -184,7 +219,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
   };
 
   async function getApiData() {
-    if(document.hidden){
+    if (document.hidden || otherTabDetected){
       return;
     }
 
@@ -307,6 +342,30 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
   return (
     <>
       <div className="app">
+        <Dialog
+          open={otherTabDetected}
+          aria-labelledby="additional-tab-dialog-title"
+          aria-describedby="additional-tab-dialog-description"
+        >
+          <DialogTitle id="additional-tab-dialog-title">
+            {"Another Browser Tab Detected"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="additional-tab-dialog-description">
+              CodeImpact does not support multiple sessions in different
+              browser tabs. The session in this tab has been suspended.
+              You can either close this browser tab/window or press the button
+              below to continue your work here and suspend sessions
+              in all other open tabs.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={continueSession} autoFocus>
+              Continue Here
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Sidebar
           models={MODELS}
           selectedModel={selectedModel}

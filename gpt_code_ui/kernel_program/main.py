@@ -6,6 +6,7 @@ import subprocess
 import sys
 import threading
 import time
+from datetime import datetime, timezone
 from queue import Queue
 from typing import Dict
 
@@ -28,6 +29,7 @@ class KernelManager:
     )
 
     def __init__(self, session_id: str):
+        self.last_access = datetime.now(timezone.utc)
         self._session_id = session_id
         self._workdir = config.KERNEL_BASE_DIR / f"kernel.{self._session_id}"
         print(f"Creating kernel {session_id} inside {self._workdir}")
@@ -172,7 +174,9 @@ def _get_kernel_manager(session_id: str, force_recreate: bool = False) -> Kernel
             finally:
                 kernel_managers_lock.release()
 
-    return kernel_managers[session_id]
+    km = kernel_managers[session_id]
+    km.last_access = datetime.now(timezone.utc)
+    return km
 
 
 @app.route("/api/<session_id>", methods=["POST", "GET"])

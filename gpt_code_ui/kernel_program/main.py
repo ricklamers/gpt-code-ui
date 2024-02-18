@@ -1,3 +1,4 @@
+import os
 import asyncio
 import json
 import logging
@@ -6,7 +7,7 @@ import subprocess
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta
 from queue import Queue
 from typing import Dict
 
@@ -23,13 +24,21 @@ import gpt_code_ui.kernel_program.utils as utils  # noqa: E402
 logger = config.get_logger()
 
 
+KERNEL_MANAGER_WATCHDOG_INTERVAL_S = float(
+    os.getenv("KERNEL_MANAGER_WATCHDOG_INTERVAL_S", 60)
+)
+assert KERNEL_MANAGER_WATCHDOG_INTERVAL_S > 0
+KERNEL_MANAGER_TIMEOUT_S = float(os.getenv("KERNEL_MANAGER_TIMEOUT_S", 3600))
+assert KERNEL_MANAGER_TIMEOUT_S > 0
+
+
 class KernelManager:
     KERNEL_MANAGER_SCRIPT_PATH = (
         pathlib.Path(__file__).parent.resolve() / "kernel_manager.py"
     )
 
     def __init__(self, session_id: str):
-        self.last_access = datetime.now(timezone.utc)
+        self.last_access = datetime.now()
         self._session_id = session_id
         self._workdir = config.KERNEL_BASE_DIR / f"kernel.{self._session_id}"
         print(f"Creating kernel {session_id} inside {self._workdir}")
@@ -175,7 +184,7 @@ def _get_kernel_manager(session_id: str, force_recreate: bool = False) -> Kernel
                 kernel_managers_lock.release()
 
     km = kernel_managers[session_id]
-    km.last_access = datetime.now(timezone.utc)
+    km.last_access = datetime.now()
     return km
 
 
@@ -218,12 +227,33 @@ async def main():
     flask_thread = threading.Thread(target=run_flask_app)
     flask_thread.start()
 
+    # Monitor last access to kernels, remove all that have not been accessed in a while
+    watchdog_thread = threading.Thread(target=kernel_manager_watchdog)
+    watchdog_thread.start()
+
     # Run in background
     await start_snakemq()
 
 
 def run_flask_app():
     app.run(host="0.0.0.0", port=config.KERNEL_APP_PORT)
+
+
+def kernel_manager_watchdog():
+    while True:
+        timeout_limit = datetime.now() - timedelta(seconds=KERNEL_MANAGER_TIMEOUT_S)
+        kernel_managers_lock.acquire()
+        try:
+            for session_id in list(kernel_managers.keys()):
+                if kernel_managers[session_id].last_access < timeout_limit:
+                    logger.info(
+                        f"Removing kernel manager for session {session_id} as it was last accessed at {kernel_managers[session_id].last_access} which was more than {KERNEL_MANAGER_TIMEOUT_S}s ago."
+                    )
+                    del kernel_managers[session_id]
+        finally:
+            kernel_managers_lock.release()
+
+        time.sleep(KERNEL_MANAGER_WATCHDOG_INTERVAL_S)
 
 
 if __name__ == "__main__":

@@ -170,18 +170,19 @@ def _get_kernel_manager(session_id: str, force_recreate: bool = False) -> Kernel
     if force_recreate:
         kernel_managers_lock.acquire()
         try:
-            kernel_managers[session_id] = KernelManager(session_id)
+            # make sure the session is deleted
+            del kernel_managers[session_id]
         finally:
             kernel_managers_lock.release()
-    else:
-        if session_id not in kernel_managers:
-            kernel_managers_lock.acquire()
-            try:
-                # while waiting for the lock, the object already might have been created --> check again inside the lock
-                if session_id not in kernel_managers:
-                    kernel_managers[session_id] = KernelManager(session_id)
-            finally:
-                kernel_managers_lock.release()
+
+    if session_id not in kernel_managers:
+        kernel_managers_lock.acquire()
+        try:
+            # while waiting for the lock, the object already might have been created --> check again inside the lock
+            if session_id not in kernel_managers:
+                kernel_managers[session_id] = KernelManager(session_id)
+        finally:
+            kernel_managers_lock.release()
 
     km = kernel_managers[session_id]
     km.last_access = datetime.now()

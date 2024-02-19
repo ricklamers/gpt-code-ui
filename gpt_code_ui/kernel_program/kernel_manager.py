@@ -316,6 +316,16 @@ def start_kernel(kernel_dir: pathlib.Path):
     return kc, kernel_process
 
 
+def terminate_kernel(kernel_id, kernel_dir, kernel_process):
+    logger.info(f"Termination of kernel {kernel_id} has been requested.")
+
+    logger.info(f"Terminating kernel process {kernel_process.pid}")
+    kernel_process.kill()
+
+    logger.info(f"Removing kernel work directory {kernel_dir}")
+    shutil.rmtree(kernel_dir, ignore_errors=True)
+
+
 if __name__ == "__main__":
     try:
         kernel_id = sys.argv[1]
@@ -326,10 +336,13 @@ if __name__ == "__main__":
             e,
         )
     else:
+        logger.info(
+            f"Start of kernel {kernel_id} with workdir {kernel_dir} has been requested."
+        )
         kc, kernel_process = start_kernel(kernel_dir)
+        logger.info(f"Kernel {kernel_id} has started. PID is {kernel_process.pid}.")
 
         # make sure the dir with the virtualenv will be deleted after kernel termination
-        atexit.register(lambda: shutil.rmtree(kernel_dir, ignore_errors=True))
-        atexit.register(lambda: kernel_process.kill())
+        atexit.register(lambda: terminate_kernel(kernel_id, kernel_dir, kernel_process))
 
         start_snakemq(kc, kernel_id)

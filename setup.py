@@ -16,7 +16,6 @@ setup(
     package_data={"gpt_code_ui.webapp": ["static/*", "static/assets/*"]},
     install_requires=[
         "ipykernel>=6,<7",
-        "snakemq>=1,<2",
         "requests>=2,<3",
         "Flask>=2,<3",
         "Flask-Cors>=3,<4",

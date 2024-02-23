@@ -236,6 +236,8 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
           setWaitingForSystem(WaitingStates.WaitingForKernel);
         } else if (data.status === "ready") {
           setWaitingForSystem(WaitingStates.Idle);
+        } else if (data.status === "idle") {
+          setWaitingForSystem(WaitingStates.Idle);
         } else if (data.status === "generating") {
           setWaitingForSystem(WaitingStates.GeneratingCode);
         } else {

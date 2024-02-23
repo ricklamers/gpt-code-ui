@@ -8,6 +8,7 @@ import time
 from typing import Dict
 
 from jupyter_client import BlockingKernelClient
+from threading import Thread
 
 import gpt_code_ui.kernel_program.config as config
 from gpt_code_ui.kernel_program.utils import create_derived_venv, escape_ansi
@@ -34,9 +35,20 @@ class Kernel:
         self._kernel_client = None
         self._kernel_process = None
         self._flusher_thread = None
-        self._start()  # TODO: this should not be blocking
+        self._startup_thread = None
+        self._start()
 
     def _start(self):
+        self._startup_thread = Thread(
+            name=f"Kernel {self._session_id} startup procedure.",
+            target=self._start_impl,
+        )
+        self._startup_thread.start()
+
+    def _ensure_started(self):
+        self._startup_thread.join()
+
+    def _start_impl(self):
         if self.status != "stopped":
             self._logger.error(f"Trying to start a kernel that is not stopped but has status {self.status} instead.")
 
@@ -133,6 +145,7 @@ IPKernelApp.launch_instance(
         self._start()
 
     def terminate(self):
+        self._ensure_started()
         self._logger.info("Termination of kernel has been requested.")
         self._status = "stopping"
         self._logger.info("Stopping message flusher thread has been requested.")
@@ -148,6 +161,8 @@ IPKernelApp.launch_instance(
         self._result_queue.put({"value": value, "type": message_type})
 
     def flush_kernel_msgs(self, tries=1, timeout=0.2):
+        self._ensure_started()
+
         try:
             hit_empty = 0
 
@@ -208,6 +223,8 @@ IPKernelApp.launch_instance(
             self._logger.exception(e)
 
     def execute(self, command):
+        self._ensure_started()
+
         self._logger.debug("Executing command: %s" % command)
 
         code = command.get("command", "")

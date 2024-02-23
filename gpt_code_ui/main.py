@@ -2,9 +2,6 @@
 
 # webapp is a Flask app (in webapp/main.py relative to this main.py)
 # kernel_program is a Python script (in kernel_program/main.py relative to this main.py)
-
-import asyncio
-import logging
 import sys
 import time
 import webbrowser
@@ -12,33 +9,26 @@ from multiprocessing import Process
 
 from gpt_code_ui.kernel_program.main import main as kernel_program_main
 from gpt_code_ui.webapp.main import APP_PORT, app
+import gpt_code_ui.kernel_program.config as config
+
 
 APP_URL = "http://localhost:%s" % APP_PORT
 
 
-def run_webapp():
+def run_webapp(logger):
     try:
         app.run(host="0.0.0.0", port=APP_PORT, use_reloader=False)
     except Exception:
-        logging.exception("Error running the webapp")
+        logger.exception("Error running the webapp")
         sys.exit(1)
 
 
-def run_kernel_program():
+def run_kernel_program(logger):
     try:
-        asyncio.run(kernel_program_main())
+        kernel_program_main()
     except Exception:
-        logging.exception("Error running the kernel_program")
+        logger.exception("Error running the kernel_program")
         sys.exit(1)
-
-
-def setup_logging():
-    log_format = "%(asctime)s [%(levelname)s]: %(message)s"
-    logging.basicConfig(level=logging.INFO, format=log_format)
-    log_filename = "app.log"
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(logging.Formatter(log_format))
-    logging.getLogger().addHandler(file_handler)
 
 
 def print_color(text, color="gray"):
@@ -67,16 +57,14 @@ def print_banner():
     print("")
     print("Find your OpenAI API key at https://platform.openai.com/account/api-keys")
     print("")
-    print_color(
-        "Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui"
-    )
+    print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")
 
 
 def main():
-    setup_logging()
+    logger = config.get_logger("GPT Code UI")
 
-    webapp_process = Process(target=run_webapp)
-    kernel_program_process = Process(target=run_kernel_program)
+    webapp_process = Process(target=run_webapp, name="WebApp", args=[logger])
+    kernel_program_process = Process(target=run_kernel_program, name="Kernel API", args=[logger])
 
     try:
         webapp_process.start()
@@ -98,16 +86,15 @@ def main():
         kernel_program_process.join()
 
     except KeyboardInterrupt:
-        print("Terminating processes...")
+        logger.info("Terminating processes...")
 
         kernel_program_process.terminate()
-
         webapp_process.terminate()
 
         webapp_process.join()
         kernel_program_process.join()
 
-        print("Processes terminated.")
+        logger.info("Processes terminated.")
 
 
 if __name__ == "__main__":

@@ -44,7 +44,6 @@ In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
 
   "API_PORT": 5010,
   "WEB_PORT": 8080,
-  "SNAKEMQ_PORT": 8765,
 
   "NO_INTERNET_AVAILABLE": 1,
 
@@ -75,7 +74,6 @@ AVAILABLE_MODELS=[{"displayName": "GPT-3.5 16k", "name": "azure/gpt-35-turbo-16k
 
 API_PORT=5010
 WEB_PORT=8080
-SNAKEMQ_PORT=8765
 
 SESSION_ENCRYPTION_KEY="<SECRET_KEY>"
 
@@ -97,7 +95,7 @@ python gpt_code_ui/main.py
 This should open a browser window, navigating you to [http://localhost:8080](http://localhost:8080), where the application is running.
 
 ### Configurables
-Set the `API_PORT`, `WEB_PORT`, `SNAKEMQ_PORT` variables to override the defaults.
+Set the `API_PORT`, `WEB_PORT` variables to override the defaults.
 When `NO_INTERNET_AVAILABLE` is non-trueish or absent, the application will create dedicated virtual environments for every session and also makes active use of `!pip install ...` commands for missing packages.
 
 ## Contributing

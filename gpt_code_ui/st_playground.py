@@ -5,7 +5,7 @@ import streamlit as st
 from gpt_code_ui.webapp.main import AVAILABLE_MODELS
 from gpt_code_ui.webapp.main import ChatHistory
 from gpt_code_ui.webapp.main import get_code
-from gpt_code_ui.webapp.prompts import SYSTEM_PROMPT
+from gpt_code_ui.webapp.prompts import get_system_prompt
 
 
 def is_initialized():
@@ -36,13 +36,13 @@ def get_parameters() -> dict:
 
 
 st.set_page_config(
-    page_title="MoleculeMate / CodeImpact prompting playground",
+    page_title="CodeImpact prompting playground",
     page_icon="🧪",
 )
-st.header("MoleculeMate / CodeImpact prompting playground")
+st.header("CodeImpact prompting playground")
 parameters = get_parameters()
 
-system_prompt = st.text_area("System Prompt", SYSTEM_PROMPT, height=300)
+system_prompt = st.text_area("System Prompt", get_system_prompt(), height=300)
 
 
 chat_history: ChatHistory = st.session_state["chat_history"]

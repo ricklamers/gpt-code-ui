@@ -20,7 +20,7 @@ from foundry_dev_tools import FoundryRestClient
 from foundry_dev_tools.foundry_api_client import FoundryAPIError
 from gpt_code_ui.webapp import llm
 from gpt_code_ui.kernel_program.config import KERNEL_APP_PORT
-from gpt_code_ui.webapp.prompts import SYSTEM_PROMPT
+from gpt_code_ui.webapp.prompts import get_system_prompt
 
 load_dotenv(".env")
 
@@ -31,10 +31,13 @@ FOUNDRY_DATA_FOLDER = os.getenv("FOUNDRY_DATA_FOLDER", "/YOUR/FOUNDRY/FOLDER")
 
 
 class ChatHistory:
-    def __init__(self, system_prompt: str = SYSTEM_PROMPT):
+    def __init__(self, system_prompt: str = None):
         self._buffer: List[Dict[str, str]] = list()
         self._last_untruncated = None
         self._truncation_maxlines = 20
+
+        if system_prompt is None:
+            system_prompt = get_system_prompt()
 
         self._append("system", system_prompt)
 

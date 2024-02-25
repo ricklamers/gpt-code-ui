@@ -11,12 +11,10 @@ def get_available_models():
     available_models = os.environ.get(
         "AVAILABLE_MODELS",
         json.dumps(
-            {
-                "MODELS": [
-                    {"displayName": "GPT-3.5 16k", "name": "openai/gpt-35-turbo-16k"},
-                    {"displayName": "GPT-3.5 0613", "name": "openai/gpt-35-turbo-0613"},
-                ]
-            }
+            [
+                {"displayName": "GPT-3.5 16k", "name": "openai/gpt-35-turbo-16k"},
+                {"displayName": "GPT-3.5 0613", "name": "openai/gpt-35-turbo-0613"},
+            ]
         ),
     )
 
@@ -24,7 +22,7 @@ def get_available_models():
         return json.loads(available_models)
     except json.JSONDecodeError as e:
         raise ValueError(
-            f"List of availabel models is not a valid JSON, check environment variable AVAILABLE_MODELS: {available_models}."
+            f"List of available models is not a valid JSON, check environment variable AVAILABLE_MODELS: {available_models}."
         ) from e
 
 
@@ -45,7 +43,6 @@ def call(messages, model: str = "openai/gpt-3.5-turbo"):
         else:
             client = openai.OpenAI(
                 api_key=os.environ["OPENAI_API_KEY"],
-                api_version=os.environ.get("OPENAI_API_VERSION", None),
             )
 
         arguments = dict(
@@ -60,9 +57,7 @@ def call(messages, model: str = "openai/gpt-3.5-turbo"):
             )
 
             if hasattr(result_GPT, "error") and result_GPT.error is not None:
-                raise RuntimeError(
-                    f"Error: {result_GPT.error['code']}, Message: {result_GPT.error['message']}"
-                )
+                raise RuntimeError(f"Error: {result_GPT.error['code']}, Message: {result_GPT.error['message']}")
 
             if result_GPT.choices is None:
                 raise RuntimeError(f"Malformed answer from API: {result_GPT}")
@@ -93,10 +88,7 @@ def call(messages, model: str = "openai/gpt-3.5-turbo"):
                 arguments = dict(
                     temperature=0.7,
                     max_tokens_to_sample=4000,
-                    prompt="".join(
-                        (ROLE_MAP[m["role"]] + m["content"]) for m in messages
-                    )
-                    + ROLE_MAP["assistant"],
+                    prompt="".join((ROLE_MAP[m["role"]] + m["content"]) for m in messages) + ROLE_MAP["assistant"],
                 )
             else:
                 raise RuntimeError(f"Unsupported bedrock base vendor: {base_vendor}")
@@ -110,9 +102,7 @@ def call(messages, model: str = "openai/gpt-3.5-turbo"):
 
             return response.json()["completion"]
         else:
-            raise RuntimeError(
-                f"Malformed bedrock model ID: {model}. Expected format 'BASE_VENDOR.MODEL'."
-            )
+            raise RuntimeError(f"Malformed bedrock model ID: {model}. Expected format 'BASE_VENDOR.MODEL'.")
 
     # ############ Others ##############
     else:

@@ -8,7 +8,7 @@ import sys
 import uuid
 from collections import defaultdict
 from functools import wraps
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 import pandas.api.types as pd_types
@@ -19,60 +19,24 @@ from flask_cors import CORS
 from foundry_dev_tools import FoundryRestClient
 from foundry_dev_tools.foundry_api_client import FoundryAPIError
 from gpt_code_ui.webapp import llm
-from gpt_code_ui.kernel_program.config import KERNEL_APP_PORT, NO_INTERNET_AVAILABLE
+from gpt_code_ui.kernel_program.config import KERNEL_APP_PORT
+from gpt_code_ui.webapp.prompts import SYSTEM_PROMPT
 
 load_dotenv(".env")
 
 AVAILABLE_MODELS = llm.get_available_models()
 SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
-FOUNDRY_DATA_FOLDER = os.getenv(
-    "FOUNDRY_DATA_FOLDER", "/Group Functions/mgf-use-case-gpt-code-ui/data"
-)
+FOUNDRY_DATA_FOLDER = os.getenv("FOUNDRY_DATA_FOLDER", "/Group Functions/mgf-use-case-gpt-code-ui/data")
 
 
 class ChatHistory:
-    def __init__(self):
-        self._buffer = list()
+    def __init__(self, system_prompt: str = SYSTEM_PROMPT):
+        self._buffer: List[Dict[str, str]] = list()
         self._last_untruncated = None
         self._truncation_maxlines = 20
 
-        self._append(
-            "system",
-            f"""Write Python code, in a triple backtick Markdown code block, that answers the user prompts.
-
-Notes:
-    First, think step by step what you want to do and write it down in English.
-    Then generate valid Python code in a single code block.
-    Make sure all code is valid - it will Be run in a Jupyter Python 3 kernel environment.
-    Define every variable before you use it.
-    For data processing, you can use
-        'numpy', # numpy==1.24.3
-        'dateparser' #dateparser==1.1.8
-        'pandas', # matplotlib==1.5.3
-        'geopandas', # geopandas==0.13.2
-        'tabulate', # tabulate==0.9.0
-        'scipy', # scipy==1.11.1
-        'scikit-learn', # scikit-learn==1.3.0
-        'WordCloud', # wordcloud==1.9.3"
-    For pdf extraction, you can use
-        'PyPDF2', # PyPDF2==3.0.1
-        'pdfminer', # pdfminer==20191125
-        'pdfplumber', # pdfplumber==0.9.0
-    For data visualization, you can use
-        'matplotlib', # matplotlib==3.7.1
-    For chemistry related tasks, you can use
-        'rdkit', # rdkit>=2023.3.3
-    Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
-    Do not set or modify matplotlib fonts. Instead assume that fonts are selected automatically as needed.
-    Do not use py3Dmol as it does not work. Use matplotlib instead, also for 3D structure plots of molecules.
-    {  'Do not try to install additional packages as no internet connection is available. Do not include any "!pip install PACKAGE" commands.' if NO_INTERNET_AVAILABLE else
-       'If an additional package is required, you can add the corresponding "!pip install PACKAGE" call to the beginning of the code.'  }
-    If the user requests to generate a table, produce code that prints a markdown table.
-    If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-    If the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename.
-    Do not use your own knowledge to answer the user prompt. Instead, focus on generating Python code for doing so.""",
-        )
+        self._append("system", system_prompt)
 
     def _append(self, role: str, content: str, name: str = None):
         if role not in ("user", "assistant", "system"):
@@ -84,9 +48,7 @@ Notes:
 
         self._buffer.append(entry)
 
-    def _extend_or_append(
-        self, role: str, prefix: str, content: str, name: str = None
-    ) -> bool:
+    def _extend_or_append(self, role: str, prefix: str, content: str, name: str = None) -> bool:
         """Returns true if a new entry has been created (i.e. append instead of extend)"""
         last = self._buffer[-1]
         if last["role"] == role and last.get("name", None) == name:
@@ -136,9 +98,13 @@ Notes:
         ):
             self._update_truncation()
 
-    def __call__(self, exclude_system: bool = False):
+    def __call__(self, exclude_system: bool = False, override_system_prompt: str = None):
         if exclude_system:
             return [entry for entry in self._buffer if entry["role"] != "system"]
+        elif override_system_prompt is not None:
+            buffer = [entry for entry in self._buffer if entry["role"] != "system"]
+            buffer.insert(0, {"role": "system", "content": override_system_prompt})
+            return buffer
         else:
             return self._buffer
 
@@ -181,9 +147,8 @@ def inspect_file(filename: str) -> str:
 
     try:
         df: pd.DataFrame = READER_MAP[ext.lower()](filename)
-        column_table = (
-            "| Column Name | Column Type |\n| ----------- | ----------- |\n"
-            + "\n".join([f"| {n} | {_convert_type(t)} |" for n, t in df.dtypes.items()])
+        column_table = "| Column Name | Column Type |\n| ----------- | ----------- |\n" + "\n".join(
+            [f"| {n} | {_convert_type(t)} |" for n, t in df.dtypes.items()]
         )
         return f"""The file contains the following columns:
 {column_table}
@@ -288,11 +253,7 @@ def proxy_kernel_manager(session_id, path):
         "transfer-encoding",
         "connection",
     ]
-    headers = [
-        (name, value)
-        for (name, value) in resp.raw.headers.items()
-        if name.lower() not in excluded_headers
-    ]
+    headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
 
     # inject the conversation history into the results
     content["chat_history"] = chat_history[session_id](exclude_system=True)
@@ -339,9 +300,7 @@ def generate_code(session_id):
 
     chat_history[session_id].add_prompt(user_prompt)
 
-    code, text, status = loop.run_until_complete(
-        get_code(chat_history[session_id](), model)
-    )
+    code, text, status = loop.run_until_complete(get_code(chat_history[session_id](), model))
     loop.close()
 
     if status == 200:
@@ -377,9 +336,7 @@ def upload_file(session_id):
         file.save(file_target)
         file_info = inspect_file(file_target)
         chat_history[session_id].upload_file(file.filename, file_info)
-        return jsonify(
-            {"message": f"File `{file.filename}` uploaded successfully.\n{file_info}"}
-        ), 200
+        return jsonify({"message": f"File `{file.filename}` uploaded successfully.\n{file_info}"}), 200
     else:
         return jsonify({"message": "File type not supported."}), 400
 
@@ -407,9 +364,7 @@ def foundry_files(session_id, folder=None):
         try:
             files = fc.download_dataset_files(dataset_rid, workdir)
         except requests.exceptions.HTTPError as e:
-            return e.response.json().get(
-                "errorCode", "Unknown Error"
-            ), e.response.status_code
+            return e.response.json().get("errorCode", "Unknown Error"), e.response.status_code
 
         results = []
         http_code = 400
@@ -428,9 +383,7 @@ def foundry_files(session_id, folder=None):
                 )
                 http_code = 200
             else:
-                results.append(
-                    {"filename": filename, "message": "File type not supported."}
-                )
+                results.append({"filename": filename, "message": "File type not supported."})
 
         return jsonify(results), http_code
     else:
@@ -449,9 +402,7 @@ def foundry_files(session_id, folder=None):
                 {
                     "folder": folder,
                     "folder_rid": folder_rid,
-                    "datasets": [
-                        {"name": f["name"], "dataset_rid": f["rid"]} for f in files
-                    ],
+                    "datasets": [{"name": f["name"], "dataset_rid": f["rid"]} for f in files],
                 }
             )
         except FoundryAPIError:

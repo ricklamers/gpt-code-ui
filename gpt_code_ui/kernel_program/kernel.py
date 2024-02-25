@@ -8,6 +8,7 @@ import time
 from typing import Dict
 
 from jupyter_client import BlockingKernelClient
+from pathlib import Path
 from threading import Thread
 
 import gpt_code_ui.kernel_program.config as config
@@ -80,6 +81,11 @@ class Kernel:
                 f"Created kernel venv at {kernel_venv_dir} with python binary {kernel_python_executable}."
             )
 
+        # ensure that the function library is available # TODO: this also allows acessing gpt_code_ui and frontend :-()
+        kernel_env["PYTHONPATH"] = (
+            str(Path(__file__).parent.parent.resolve()) + os.pathsep + kernel_env.get("PYTHONPATH", "")
+        )
+
         # start the kernel using the virtual env python executable
         kernel_code = f"""from ipykernel.kernelapp import IPKernelApp
 IPKernelApp.launch_instance(
@@ -115,7 +121,12 @@ IPKernelApp.launch_instance(
         self._kernel_client.load_connection_file()
         self._kernel_client.start_channels()
         self._kernel_client.wait_for_ready()
-
+        self._kernel_client.execute(
+            """from function_library import AVAILABLE_FUNCTIONS
+for function_name, function in AVAILABLE_FUNCTIONS.items():
+    locals()[function_name] = function
+"""
+        )
         self._logger.info(f"Kernel client has started. Connection details found in {kernel_connection_file}.")
 
         self._flusher_thread = FlushingThread(

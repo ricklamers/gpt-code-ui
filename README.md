@@ -16,7 +16,21 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 - Context awareness (it can refer to your previous messages)
 - Generate code
 - Run code (Python kernel)
-- Model switching (GPT-3.5 and GPT-4)
+- Make proprietary code available to the model
+- Model switching (GPT-3.5 and GPT-4, Bedrock, etc.)
+
+## Using proprietary code
+The model is trained on public code from GitHub. Hence, out of the box, it can only generate code that is publicly available. However, you can make your proprietary code available to the model by implementing individual functions that wrap your proprietary code. Type annotations and doc strings will help the model to understand what your code does.
+
+### Adding a new function
+Right now, proprietary functions are hard-coded to `gpt_code_ui.function_library.AVAILABLE_MODELS`. To add a new function, simply add a new entry to this dictionary. The key is the name of the function as it will be used in the prompt. The value is the function itself. The function must be a callable and can take any input and produce any output. Have a look at `gpt_code_ui.function_library.examples` for examples.
+
+It is important that you provide type annotations and a doc string to your function to help the LLM understand what your function does and how it is used.
+
+Considerations:
+- Wrap complex code in a single function.
+- Try to use simple types (e.g. `str`, `int`, `float`, `bool`, `list`, `dict`) as input and output. In the future, you can also pass complex types (e.g. `pandas.DataFrame`) but this is not yet supported.
+- If you use `list` or `dict` as input, make sure to provide type annotations for the elements, e.g. `list[str]` or `dict[str, int]`.
 
 ## Misc.
 ### Running inside the AppService

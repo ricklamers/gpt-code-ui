@@ -18,8 +18,9 @@ from flask import Flask, Response, jsonify, request, send_from_directory, sessio
 from flask_cors import CORS
 from foundry_dev_tools import FoundryRestClient
 from foundry_dev_tools.foundry_api_client import FoundryAPIError
-from gpt_code_ui.webapp import llm
+
 from gpt_code_ui.kernel_program.config import KERNEL_APP_PORT
+from gpt_code_ui.webapp import llm
 from gpt_code_ui.webapp.prompts import get_system_prompt
 
 load_dotenv(".env")

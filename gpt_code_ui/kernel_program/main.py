@@ -1,11 +1,11 @@
 import atexit
 import logging
 import sys
-
 from datetime import datetime, timedelta
+from functools import wraps
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from functools import wraps
 
 from gpt_code_ui.kernel_program import config  # noqa: E402
 from gpt_code_ui.kernel_program.kernel import Kernel, StoppableThread  # noqa: E402

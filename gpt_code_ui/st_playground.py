@@ -2,9 +2,7 @@ import asyncio
 
 import streamlit as st
 
-from gpt_code_ui.webapp.main import AVAILABLE_MODELS
-from gpt_code_ui.webapp.main import ChatHistory
-from gpt_code_ui.webapp.main import get_code
+from gpt_code_ui.webapp.main import AVAILABLE_MODELS, ChatHistory, get_code
 from gpt_code_ui.webapp.prompts import get_system_prompt
 
 

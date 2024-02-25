@@ -1,11 +1,8 @@
 import types
-
-from typing import Callable, Dict, Any, List
+from typing import Any, Callable, Dict, List
 
 from gpt_code_ui.function_library import AVAILABLE_FUNCTIONS
-from gpt_code_ui.function_library.parser import get_function_signature
-from gpt_code_ui.function_library.parser import is_empty_annotation
-from gpt_code_ui.function_library.parser import is_empty_default
+from gpt_code_ui.function_library.parser import get_function_signature, is_empty_annotation, is_empty_default
 from gpt_code_ui.kernel_program.config import NO_INTERNET_AVAILABLE
 
 SYSTEM_PROMPT_TEMPLATE = """Write Python code, in a triple backtick Markdown code block, that answers the user prompts.

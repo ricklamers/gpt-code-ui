@@ -1,9 +1,5 @@
-from gpt_code_ui.function_library.examples import generate_derivate_molecules
-from gpt_code_ui.function_library.examples import predict_solubility
-from gpt_code_ui.webapp.prompts import function_to_prompt
-from gpt_code_ui.webapp.prompts import get_system_prompt
-from gpt_code_ui.webapp.prompts import SYSTEM_PROMPT_TEMPLATE
-
+from gpt_code_ui.function_library.examples import generate_derivate_molecules, predict_solubility
+from gpt_code_ui.webapp.prompts import SYSTEM_PROMPT_TEMPLATE, function_to_prompt, get_system_prompt
 
 _predict_solubility_prompt = '''def predict_solubility(smiles: str) -> float:
     """Predict the solubility of a molecule from its SMILES string.

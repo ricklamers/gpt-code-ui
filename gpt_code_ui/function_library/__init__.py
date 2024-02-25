@@ -1,7 +1,6 @@
-from typing import Dict, Callable
+from typing import Callable, Dict
 
-from .examples import generate_derivate_molecules
-from .examples import predict_solubility
+from .examples import generate_derivate_molecules, predict_solubility
 
 # TODO (TP): Create better, more scalable way to discover functions
 AVAILABLE_FUNCTIONS: Dict[str, Callable] = {

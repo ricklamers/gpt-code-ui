@@ -1,6 +1,6 @@
 import inspect
 from dataclasses import dataclass
-from typing import Type, Any, Callable, List
+from typing import Any, Callable, List, Type
 
 
 @dataclass

@@ -1,7 +1,8 @@
-import os
 import json
-import requests
+import os
+
 import openai
+import requests
 from dotenv import load_dotenv
 
 load_dotenv(".env")

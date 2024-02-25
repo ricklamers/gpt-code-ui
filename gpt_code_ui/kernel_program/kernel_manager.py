@@ -1,9 +1,8 @@
 import threading
-
 from typing import Dict, List
 
-from gpt_code_ui.kernel_program.kernel import Kernel  # noqa: E402
 from gpt_code_ui.kernel_program import config  # noqa: E402
+from gpt_code_ui.kernel_program.kernel import Kernel  # noqa: E402
 
 
 class KernelManager:

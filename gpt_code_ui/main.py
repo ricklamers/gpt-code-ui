@@ -7,10 +7,9 @@ import time
 import webbrowser
 from multiprocessing import Process
 
+import gpt_code_ui.kernel_program.config as config
 from gpt_code_ui.kernel_program.main import main as kernel_program_main
 from gpt_code_ui.webapp.main import APP_PORT, app
-import gpt_code_ui.kernel_program.config as config
-
 
 APP_URL = "http://localhost:%s" % APP_PORT
 

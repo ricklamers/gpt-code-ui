@@ -5,15 +5,15 @@ import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
+from threading import Thread
 from typing import Dict
 
 from jupyter_client import BlockingKernelClient
-from pathlib import Path
-from threading import Thread
 
 import gpt_code_ui.kernel_program.config as config
-from gpt_code_ui.kernel_program.utils import create_derived_venv, escape_ansi
 from gpt_code_ui.kernel_program.stoppable_thread import StoppableThread
+from gpt_code_ui.kernel_program.utils import create_derived_venv, escape_ansi
 
 
 class FlushingThread(StoppableThread):

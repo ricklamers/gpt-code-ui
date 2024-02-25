@@ -98,7 +98,10 @@ def type_to_string(t: type) -> str:
         A string representation of the type.
     """
 
-    return str(t) if isinstance(t, types.GenericAlias) else t.__name__
+    if isinstance(t, types.GenericAlias) or t is None:
+        return str(t)
+    else:
+        return t.__name__
 
 
 def function_to_prompt(fun: Callable) -> str:

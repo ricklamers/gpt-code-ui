@@ -1,0 +1,16 @@
+.git
+app.log
+workspace
+.pytest_cache
+tests
+*.egg-info
+dist
+.mypy_cache
+.ruff_cache
+.github
+.gitignore
+.ipynb_checkpoints
+.DS_Store
+.devcontainer
+.vscode
+scripts

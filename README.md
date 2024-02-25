@@ -30,7 +30,6 @@ In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
   "AZURE_API_VERSION": "2023-09-01-preview",
 
   "OPENAI_API_KEY": "sk-INVALID",
-  "OPENAI_API_VERSION": "2023-09-01-preview",
 
   "BEDROCK_GATEWAY_API_KEY": "<YOUR API KEY>",
   "BEDROCK_GATEWAY_API_BASE": "<YOUR_BEDROCK_GATEWAY_URL>",
@@ -65,7 +64,6 @@ AZURE_API_BASE=https://your-resource-name.openai.azure.com
 AZURE_API_VERSION=2023-09-01-preview
 
 OPENAI_API_KEY=sk-XXXX
-OPENAI_API_VERSION=2023-09-01-preview
 
 BEDROCK_GATEWAY_API_KEY=YYYY
 BEDROCK_GATEWAY_API_BASE=https://your-gateway-url.com
@@ -93,6 +91,9 @@ export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 python gpt_code_ui/main.py
 ```
 This should open a browser window, navigating you to [http://localhost:8080](http://localhost:8080), where the application is running.
+
+### Prompt playground
+Run `streamlit run gpt_code_ui/st_playground.py` to start the prompt playground app.
 
 ### Configurables
 Set the `API_PORT`, `WEB_PORT` variables to override the defaults.

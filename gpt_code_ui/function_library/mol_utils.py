@@ -13,18 +13,11 @@ def draw_smiles(smiles_list: List[str], legends: List[str] = None, mols_per_row:
         legends (List[str], optional): A list of legend strings. Defaults to None.
         mols_per_row (int, optional): Number of molecules per row. Defaults to 5.
     """
-    if legends is not None:
-        display(
-            Draw.MolsToGridImage(
-                [Chem.MolFromSmiles(smiles) for smiles in smiles_list],
-                molsPerRow=mols_per_row,
-                legends=legends,
-            )
-        )
-    else:
-        display(
-            Draw.MolsToGridImage(
-                [Chem.MolFromSmiles(smiles) for smiles in smiles_list],
-                molsPerRow=mols_per_row,
-            )
-        )
+    mols = Draw.MolsToGridImage(
+        [Chem.MolFromSmiles(smiles) for smiles in smiles_list],
+        molsPerRow=mols_per_row,
+        legends=legends,
+        useSVG=True,
+    )
+
+    display(mols)

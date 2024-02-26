@@ -1,4 +1,4 @@
-.PHONY: all compile_frontend bundle_pypi upload_pypi increment_version release check_env_var
+.PHONY: all container_image container_run compile_frontend bundle_pypi upload_pypi increment_version release check_env_var
 
 all: check_env_var build upload_pypi
 
@@ -25,6 +25,18 @@ compile_frontend:
 	VITE_APP_VERSION=$$(grep -e '^\s*version\s*=\s*"[^"]*"' ../pyproject.toml | cut -d '"' -f 2) npm run build && \
 	find ../gpt_code_ui/webapp/static -mindepth 1 ! -name '.gitignore' -delete && \
 	rsync -av dist/ ../gpt_code_ui/webapp/static
+
+container_image:
+	podman build . --tag=codeimpact
+
+container_run:
+	podman run \
+		--env 'APP_SERVICE_CONFIG=$(shell cat .app_service_config.json)' \
+		--env "FOUNDRY_DEV_TOOLS_FOUNDRY_URL=$(shell grep -e 'foundry_url' $$HOME/.foundry-dev-tools/config | cut -d '=' -f 2 | awk '{$$1=$$1;print}')" \
+		--env "FOUNDRY_DEV_TOOLS_JWT=$(shell grep -e 'jwt' $$HOME/.foundry-dev-tools/config | cut -d '=' -f 2 | awk '{$$1=$$1;print}')" \
+		-p=8080:8080/tcp \
+		--name="CodeImpact" \
+		localhost/codeimpact:latest
 
 bundle_pypi:
 	rm -rf dist build && \

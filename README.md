@@ -106,6 +106,16 @@ python gpt_code_ui/main.py
 ```
 This should open a browser window, navigating you to [http://localhost:8080](http://localhost:8080), where the application is running.
 
+### Running the AppService Container Locally with Podman
+Create a file `.app_service_config.json` that contains the content of the `APP_SERVICE_CONFIG` variable.
+Then simply invoke the following commands:
+```
+make container_image
+make container_run
+```
+Afterwards, you should be able to access the frontend via [http://localhost:8080](http://localhost:8080).
+Note, that this does not include proper foundry config at the moment. Should be fixed by someone somewhen.
+
 ### Prompt playground
 Run `streamlit run gpt_code_ui/st_playground.py` to start the prompt playground app.
 

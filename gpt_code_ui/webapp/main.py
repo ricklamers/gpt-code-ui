@@ -233,13 +233,15 @@ def serve_static(path):
 @app.route("/api/<path:path>", methods=["GET", "POST"])
 @session_id_required
 def proxy_kernel_manager(session_id, path):
-    if request.method == "POST":
-        resp = requests.post(
-            f"http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}",
-            json=request.get_json(),
-        )
-    else:
-        resp = requests.get(f"http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}")
+    backend_url = f"http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}"
+
+    try:
+        if request.method == "POST":
+            resp = requests.post(backend_url, json=request.get_json())
+        else:
+            resp = requests.get(backend_url)
+    except requests.exceptions.ConnectionError as e:
+        return jsonify({"message": f"Failed to communicate with backend server: {e}."}), 500
 
     # store execution results in conversation history to allow back-references by the user
     content = json.loads(resp.content)
@@ -262,8 +264,7 @@ def proxy_kernel_manager(session_id, path):
     # inject the conversation history into the results
     content["chat_history"] = chat_history[session_id](exclude_system=True)
 
-    response = Response(json.dumps(content), resp.status_code, headers)
-    return response
+    return Response(json.dumps(content), resp.status_code, headers)
 
 
 @app.route("/download")

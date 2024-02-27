@@ -93,6 +93,7 @@ IPKernelApp.launch_instance(
         "--IPKernelApp.connection_file",
         "{kernel_connection_file}",
         "--matplotlib=inline",
+        f"--ipython-dir={self._workdir}",
         "--quiet",
     ]
 )"""

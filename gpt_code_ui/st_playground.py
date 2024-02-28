@@ -34,10 +34,10 @@ def get_parameters() -> dict:
 
 
 st.set_page_config(
-    page_title="CodeImpact prompting playground",
+    page_title="Prompting playground",
     page_icon="🧪",
 )
-st.header("CodeImpact prompting playground")
+st.header("Prompting playground")
 parameters = get_parameters()
 
 system_prompt = st.text_area("System Prompt", get_system_prompt(), height=300)

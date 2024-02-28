@@ -27,7 +27,7 @@ compile_frontend:
 	rsync -av dist/ ../gpt_code_ui/webapp/static
 
 container_image:
-	podman build . --tag=codeimpact
+	podman build . --tag=gpt_code_ui
 
 container_run:
 	podman run \
@@ -35,8 +35,8 @@ container_run:
 		--env "FOUNDRY_DEV_TOOLS_FOUNDRY_URL=$(shell grep -e 'foundry_url' $$HOME/.foundry-dev-tools/config | cut -d '=' -f 2 | awk '{$$1=$$1;print}')" \
 		--env "FOUNDRY_DEV_TOOLS_JWT=$(shell grep -e 'jwt' $$HOME/.foundry-dev-tools/config | cut -d '=' -f 2 | awk '{$$1=$$1;print}')" \
 		-p=8080:8080/tcp \
-		--name="CodeImpact" \
-		localhost/codeimpact:latest
+		--name="GPT-Code-UI" \
+		localhost/gpt_code_ui:latest
 
 bundle_pypi:
 	rm -rf dist build && \

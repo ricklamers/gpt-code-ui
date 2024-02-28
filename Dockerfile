@@ -69,7 +69,7 @@ RUN ls -al /etc/fstab
 RUN echo "proc /proc proc nosuid,nodev,noexec,hidepid=2 0 0" >> /etc/fstab
 RUN cat /etc/fstab
 
-RUN adduser --no-create-home codeimpact
-USER codeimpact
+RUN adduser --no-create-home gpt_code_ui
+USER gpt_code_ui
 
 CMD ["python", "./run_with_app_service_config.py", "./gpt_code_ui/main.py"]

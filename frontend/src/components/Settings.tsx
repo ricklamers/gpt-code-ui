@@ -1,35 +1,22 @@
-import AssistantIcon from '@mui/icons-material/Assistant';
-
-import "./Sidebar.css";
-import { useState, useEffect } from "react";
+import "./Settings.css";
+import { useEffect } from "react";
 import InputLabel from '@mui/material/InputLabel';
 import Box from '@mui/material/Box';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Chip from '@mui/material/Chip';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckIcon from "@mui/icons-material/Check";
-import ReactPlayer from 'react-player';
-import ReactMarkdown from 'react-markdown';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 
-export default function Sidebar(props: {
+export default function Settings(props: {
   models: Array<{ name: string; displayName: string }>;
   selectedModel: string;
   onSelectModel: any;
   toggledOptions: string[];
   onToggledOptions: any;
 }) {
-  let [demoDialogOpen, setDemoDialogOpen] = useState(false);
-  let [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(true);
-
   const options: Array<{ name: string; displayName: string }> = [
     {name: 'svg', displayName: 'Vector Graphics'},
   ];
@@ -44,28 +31,9 @@ export default function Sidebar(props: {
       }
   }, [props.models]);
 
-
   return (
     <>
-      <div className="sidebar">
-        <div className="logo">
-            <div className="wrapper">
-              <div className="header">
-                <AssistantIcon />
-              </div>
-              <div className="header">
-                <p className="headline">Code</p>
-                <p className="headline">Impact</p>
-              </div>
-            </div>
-            <div className='github'>
-                Built with ❤️
-            </div>
-            <div className='github'>
-                using&nbsp;<a href='https://github.com/ricklamers/gpt-code-ui'>GPT-Code UI - v{import.meta.env.VITE_APP_VERSION}</a>
-            </div>
-        </div>
-        <div className="settings">
+          <div className="settings">
             <label className="header">Settings</label>
             <FormControl fullWidth className="setting">
               <InputLabel id="options-select-label">Options</InputLabel>
@@ -131,8 +99,7 @@ export default function Sidebar(props: {
               })}
               </Select>
             </FormControl>
-        </div>
-      </div>
+          </div>
     </>
   );
 }

@@ -1,6 +1,8 @@
 import "./App.css";
 import Input from "./components/Input";
-import Sidebar from "./components/Sidebar";
+import Logo from "./components/Logo"
+import Documentation from "./components/Documentation";
+import Settings from "./components/Settings";
 import Chat, { WaitingStates } from "./components/Chat";
 import React, { useState, useEffect } from "react";
 import Button from '@mui/material/Button';
@@ -300,8 +302,8 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
           });
         } else {
           const msg = await response.text();
-          addMessage({ text: `Downloading dataset <a href="https://palantir.mcloud.merckgroup.com/workspace/hubble/exploration?objectId=${dataset_rid}" target="_blank">${dataset_rid}</a> failed with status code ${response.status}: ${msg}.
-Likely, you only have Discoverer role but need at least Reader role in the <a href="https://palantir.mcloud.merckgroup.com/workspace/compass/view/${foundryFolder}" target="_blank">specified folder</a>.`, type: "message", role: "upload" });
+          addMessage({ text: `Downloading dataset <a href="https://YOUR_FOUNDRY_SERVER/workspace/hubble/exploration?objectId=${dataset_rid}" target="_blank">${dataset_rid}</a> failed with status code ${response.status}: ${msg}.
+Likely, you only have Discoverer role but need at least Reader role in the <a href="https://YOUR_FOUNDRY_SERVER/workspace/compass/view/${foundryFolder}" target="_blank">specified folder</a>.`, type: "message", role: "upload" });
           console.log(response);
         }
       } catch (e) {
@@ -364,7 +366,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="additional-tab-dialog-description">
-              CodeImpact does not support multiple sessions in different
+              This tool does not support multiple sessions in different
               browser tabs. The session in this tab has been suspended.
               You can either close this browser tab/window or press the button
               below to continue your work here and suspend sessions
@@ -378,17 +380,27 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           </DialogActions>
         </Dialog>
 
-        <Sidebar
-          models={MODELS}
-          selectedModel={selectedModel}
-          onSelectModel={(val: string) => {
-            setSelectedModel(val);
-          }}
-          toggledOptions={toggledOptions}
-          onToggledOptions={(val: string[]) => {
-            setToggledOptions(val);
-          }}
-        />
+        <Stack
+          direction="column"
+          justifyContent="space-between"
+          alignItems="stretch"
+          sx={{ padding: "0.75rem" }}
+          className="sidebar"
+        >
+            <Logo />
+            <Documentation />
+            <Settings
+              models={MODELS}
+              selectedModel={selectedModel}
+              onSelectModel={(val: string) => {
+                setSelectedModel(val);
+              }}
+              toggledOptions={toggledOptions}
+              onToggledOptions={(val: string[]) => {
+                setToggledOptions(val);
+              }}
+            />
+        </Stack>
         <div className="main">
           <Chat
             chatScrollRef={chatScrollRef}

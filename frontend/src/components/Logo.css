@@ -1,14 +1,3 @@
-.sidebar {
-    min-width: 260px;
-    background: #202123;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 0.75rem;
-    color: #fff;
-}
-
 .logo {
     text-align: center;
     font-weight: bold;
@@ -26,7 +15,7 @@
 }
 
 a:hover {
-    color: #fff;
+    color: rgb(150, 215, 210);
 }
 
 .logo svg {
@@ -47,18 +36,4 @@ a:hover {
 
 .headline {
     margin: 0 10px;
-}
-
-.settings {
-    display: flex;
-    flex-direction: column;
-}
-
-label.header {
-    padding: 0.5rem 0;
-    font-size: 1.2rem;
-}
-
-.setting {
-    margin-top: 1em !important;
 }

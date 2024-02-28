@@ -34,7 +34,14 @@ function App() {
       endpoint: `${Config.WEB_ADDRESS}/clear_history`,
       status: WaitingStates.Idle,
       message: "Clearing chat history.",
-      onSuccess: () => { setMessages(DEFAULT_MESSAGES); }},
+      onSuccess: () => { setMessages(DEFAULT_MESSAGES); }
+    },
+    "stop": {
+      endpoint: `${Config.API_ADDRESS}/interrupt`,
+      status: WaitingStates.WaitingForKernel,
+      message: "Interrupting code execution.",
+      onSuccess: () => {}
+    },
   };
 
   let [MODELS, setModels] = useState<{displayName: string, name: string}[]>([]);
@@ -99,8 +106,9 @@ Pro tip: you can upload a file and I'll be able to use it.`,
       type: "message",
     },
     {
-      text: `If I get stuck just type <kbd>reset</kbd> and I'll restart the kernel.
-In case you want to clear the conversation history, just type <kbd>clear</kbd>.
+      text: `If I get stuck just type <kbd>reset<kbd>⮐</kbd></kbd> and I'll restart the kernel.
+For interrupting a running program, please type <kbd>stop<kbd>⮐</kbd></kbd>.
+In case you want to clear the conversation history, just type <kbd>clear<kbd>⮐</kbd></kbd>.
 Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&darr;</kbd></kbd> to recall previous prompts.`,
       role: "generator",
       type: "message",
@@ -240,6 +248,8 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
           setWaitingForSystem(WaitingStates.Idle);
         } else if (data.status === "generating") {
           setWaitingForSystem(WaitingStates.GeneratingCode);
+        } else if (data.status === "busy") {
+          setWaitingForSystem(WaitingStates.RunningCode);
         } else {
           setWaitingForSystem(WaitingStates.WaitingForKernel);
         }

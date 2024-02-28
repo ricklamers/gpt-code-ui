@@ -156,12 +156,20 @@ for function_name, function in AVAILABLE_FUNCTIONS.items():
         self.terminate()
         self._start()
 
+    def interrupt(self):
+        self._logger.info("Interrupting kernel execution.")
+        msg = self._kernel_client.session.msg("interrupt_request", {})
+        self._kernel_client.control_channel.send(msg)
+        return msg["header"]["msg_id"]
+
     def terminate(self):
         self._ensure_started()
         self._logger.info("Termination of kernel has been requested.")
         self._status = "stopping"
         self._logger.info("Stopping message flusher thread has been requested.")
         self._flusher_thread.stop(wait=True)
+        self._logger.info("Stopping kernel client.")
+        self._kernel_client.shutdown()
         self._logger.info(f"Terminating kernel process {self._kernel_process.pid}")
         self._kernel_process.kill()
         self._logger.info(f"Removing kernel work directory {self._workdir}")

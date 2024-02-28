@@ -84,6 +84,13 @@ def handle_restart(kernel: Kernel):
     return jsonify({"result": "success", "status": kernel.status})
 
 
+@app.route("/interrupt/<session_id>", methods=["POST"])
+@kernel_specific
+def handle_interrupt(kernel: Kernel):
+    kernel.interrupt()
+    return jsonify({"result": "success", "status": kernel.status})
+
+
 @app.route("/workdir/<session_id>", methods=["GET"])
 @kernel_specific
 def handle_workdir(kernel: Kernel):

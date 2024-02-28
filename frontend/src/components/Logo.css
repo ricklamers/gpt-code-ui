@@ -1,0 +1,39 @@
+.logo {
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin-top: 1rem;
+}
+
+.github {
+    color: #999;
+    font-size: 0.8rem;
+}
+
+.github a {
+    color: #999;
+}
+
+a:hover {
+    color: rgb(150, 215, 210);
+}
+
+.logo svg {
+    color: #fff;
+    width: 35px;
+    height: 35px;
+    margin-right: 5px;
+    margin-bottom: -8px;
+}
+
+.wrapper {
+    overflow:auto;
+}
+
+.header {
+    float: left;
+}
+
+.headline {
+    margin: 0 10px;
+}

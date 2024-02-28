@@ -1,0 +1,8 @@
+.settings {
+    display: flex;
+    flex-direction: column;
+}
+
+.setting {
+    margin-top: 1em !important;
+}

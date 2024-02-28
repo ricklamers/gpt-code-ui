@@ -1,6 +1,8 @@
 import "./App.css";
 import Input from "./components/Input";
-import Sidebar from "./components/Sidebar";
+import Logo from "./components/Logo"
+import Documentation from "./components/Documentation";
+import Settings from "./components/Settings";
 import Chat, { WaitingStates } from "./components/Chat";
 import React, { useState, useEffect } from "react";
 import Button from '@mui/material/Button';
@@ -378,17 +380,27 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           </DialogActions>
         </Dialog>
 
-        <Sidebar
-          models={MODELS}
-          selectedModel={selectedModel}
-          onSelectModel={(val: string) => {
-            setSelectedModel(val);
-          }}
-          toggledOptions={toggledOptions}
-          onToggledOptions={(val: string[]) => {
-            setToggledOptions(val);
-          }}
-        />
+        <div className="sidebar">
+          <div className="sidebarUpper">
+            <Logo />
+            <Documentation />
+          </div>
+          <div className="sidebarMiddle">
+          </div>
+          <div className="sidebarLower">
+            <Settings
+              models={MODELS}
+              selectedModel={selectedModel}
+              onSelectModel={(val: string) => {
+                setSelectedModel(val);
+              }}
+              toggledOptions={toggledOptions}
+              onToggledOptions={(val: string[]) => {
+                setToggledOptions(val);
+              }}
+            />
+          </div>
+        </div>
         <div className="main">
           <Chat
             chatScrollRef={chatScrollRef}

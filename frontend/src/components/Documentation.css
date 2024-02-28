@@ -1,0 +1,9 @@
+.documentation {
+    display: flex;
+    flex-direction: column;
+}
+
+label.header {
+    padding: 0.5rem 0;
+    font-size: 1.2rem;
+}

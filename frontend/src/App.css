@@ -10,6 +10,17 @@
   flex-direction: row;
 }
 
+.sidebar {
+  min-width: 260px;
+  background: #ffffff;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.75rem;
+  color: rgb(15, 105, 175);
+}
+
 .main {
   display: flex;
   flex-direction: column;

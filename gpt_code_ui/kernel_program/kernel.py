@@ -6,7 +6,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 from typing import Dict
 
 from jupyter_client import BlockingKernelClient
@@ -36,6 +36,7 @@ class Kernel:
         self._kernel_client = None
         self._kernel_process = None
         self._flusher_thread = None
+        self._flusher_lock = Lock()
         self._startup_thread = None
         self._start()
 
@@ -179,66 +180,67 @@ for function_name, function in AVAILABLE_FUNCTIONS.items():
         self._result_queue.put({"value": value, "type": message_type})
 
     def flush_kernel_msgs(self, tries=1, timeout=0.2):
-        self._ensure_started()
+        with self._flusher_lock:
+            self._ensure_started()
 
-        try:
-            hit_empty = 0
+            try:
+                hit_empty = 0
 
-            while True:
-                try:
-                    msg = self._kernel_client.get_iopub_msg(timeout=timeout)
-                    msg_type = msg["msg_type"]
-                    msg_content = msg["content"]
+                while True:
+                    try:
+                        msg = self._kernel_client.get_iopub_msg(timeout=timeout)
+                        msg_type = msg["msg_type"]
+                        msg_content = msg["content"]
 
-                    self._logger.debug(f'Received "{msg_type}": {msg_content}')
+                        self._logger.debug(f'Received "{msg_type}": {msg_content}')
 
-                    if msg_type == "status":
-                        self._status = msg_content["execution_state"]
-                        # self._put_message(msg_content["execution_state"], message_type="message_status")
+                        if msg_type == "status":
+                            self._status = msg_content["execution_state"]
+                            # self._put_message(msg_content["execution_state"], message_type="message_status")
 
-                    elif msg_type == "execute_input":
-                        pass  # do not want to mirror the input back
+                        elif msg_type == "execute_input":
+                            pass  # do not want to mirror the input back
 
-                    elif msg_type in ("execute_result", "display_data"):
-                        content_data = msg_content["data"]
+                        elif msg_type in ("execute_result", "display_data"):
+                            content_data = msg_content["data"]
 
-                        if "image/png" in content_data:
-                            self._put_message(content_data["image/png"], message_type="image/png")
-                        elif "image/jpeg" in content_data:
-                            self._put_message(content_data["image/jpeg"], message_type="image/jpeg")
-                        elif "image/svg+xml" in content_data:
-                            self._put_message(content_data["image/svg+xml"], message_type="image/svg+xml")
-                        elif "text/plain" in content_data:
+                            if "image/png" in content_data:
+                                self._put_message(content_data["image/png"], message_type="image/png")
+                            elif "image/jpeg" in content_data:
+                                self._put_message(content_data["image/jpeg"], message_type="image/jpeg")
+                            elif "image/svg+xml" in content_data:
+                                self._put_message(content_data["image/svg+xml"], message_type="image/svg+xml")
+                            elif "text/plain" in content_data:
+                                self._put_message(
+                                    content_data["text/plain"],
+                                    "message_raw" if msg_type == "execute_result" else "message",
+                                )
+
+                        elif msg_type == "stream":
+                            self._put_message(msg_content["text"], message_type="message")
+
+                        elif msg_type == "error":
                             self._put_message(
-                                content_data["text/plain"],
-                                "message_raw" if msg_type == "execute_result" else "message",
+                                escape_ansi("\n".join(msg_content["traceback"])),
+                                message_type="message_error",
                             )
 
-                    elif msg_type == "stream":
-                        self._put_message(msg_content["text"], message_type="message")
+                        else:
+                            self._logger.debug(f"Unexpected message type {msg_type}")
 
-                    elif msg_type == "error":
-                        self._put_message(
-                            escape_ansi("\n".join(msg_content["traceback"])),
-                            message_type="message_error",
-                        )
-
-                    else:
-                        self._logger.debug(f"Unexpected message type {msg_type}")
-
-                except queue.Empty:
-                    hit_empty += 1
-                    if hit_empty == tries:
-                        # Empty queue for one second, give back control
+                    except queue.Empty:
+                        hit_empty += 1
+                        if hit_empty == tries:
+                            # Empty queue for one second, give back control
+                            break
+                    except (ValueError, IndexError):
+                        # get_iopub_msg suffers from message fetch errors
                         break
-                except (ValueError, IndexError):
-                    # get_iopub_msg suffers from message fetch errors
-                    break
-                except Exception as e:
-                    self._logger.exception(e)
-                    break
-        except Exception as e:
-            self._logger.exception(e)
+                    except Exception as e:
+                        self._logger.exception(e)
+                        break
+            except Exception as e:
+                self._logger.exception(e)
 
     def execute(self, command):
         self._ensure_started()

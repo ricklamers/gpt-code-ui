@@ -9,6 +9,8 @@ import FormControl from '@mui/material/FormControl';
 import CancelIcon from "@mui/icons-material/Cancel";
 import CheckIcon from "@mui/icons-material/Check";
 import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
+
 
 export default function Settings(props: {
   models: Array<{ name: string; displayName: string }>;
@@ -33,8 +35,9 @@ export default function Settings(props: {
 
   return (
     <>
-          <div className="settings">
+          <Stack direction="column" spacing={0}>
             <label className="header">Settings</label>
+            <Stack direction="column" spacing={1}>
             <FormControl fullWidth className="setting">
               <InputLabel id="options-select-label">Options</InputLabel>
               <Select
@@ -99,7 +102,8 @@ export default function Settings(props: {
               })}
               </Select>
             </FormControl>
-          </div>
+            </Stack>
+          </Stack>
     </>
   );
 }

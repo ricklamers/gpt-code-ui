@@ -2,6 +2,7 @@ import "./Documentation.css";
 import { useState } from "react";
 import FormControl from '@mui/material/FormControl';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -9,6 +10,8 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import ReactPlayer from 'react-player';
 import ReactMarkdown from 'react-markdown';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import VideoChatIcon from '@mui/icons-material/VideoChat';
 import demo_video from "../../public/assets/CodeImpact.mp4";
 import disclaimer from "../../public/assets/Disclaimer.md"
 
@@ -82,11 +85,13 @@ export default function Documentation() {
         </IconButton>
       </Dialog>
 
-      <div className="documentation">
+      <Stack direction="column" spacing={0}>
         <label className="header">Documentation</label>
-        <Button onClick={() => { setDisclaimerDialogOpen(true); }}>ReadMe</Button>
-        <Button onClick={() => { setDemoDialogOpen(true); }}>Demo Video</Button>
-      </div>
+        <Stack direction="column" spacing={1}>
+            <Button endIcon={<ReceiptLongIcon color="primary" />} style={{justifyContent: "flex-end"}} onClick={() => { setDisclaimerDialogOpen(true); }}>ReadMe</Button>
+            <Button endIcon={<VideoChatIcon color="primary" />} style={{justifyContent: "flex-end"}} onClick={() => { setDemoDialogOpen(true); }}>Demo Video</Button>
+        </Stack>
+      </Stack>
     </>
   );
 }

@@ -26,7 +26,7 @@ function Message(props: {
 
   let ICONS = {
     "upload": <FileUploadIcon />,
-    "generator":  <VoiceChatIcon />,
+    "generator": <VoiceChatIcon />,
     "system": <TerminalIcon />,
     "user": <PersonIcon />,
   };

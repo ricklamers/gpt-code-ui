@@ -2,9 +2,11 @@ import "./App.css";
 import Input from "./components/Input";
 import Logo from "./components/Logo"
 import Documentation from "./components/Documentation";
+import Kernel from "./components/Kernel";
 import Settings from "./components/Settings";
 import Chat, { WaitingStates } from "./components/Chat";
 import React, { useState, useEffect } from "react";
+import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -380,14 +382,20 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           </DialogActions>
         </Dialog>
 
-        <div className="sidebar">
-          <div className="sidebarUpper">
+        <Stack
+          direction="column"
+          justifyContent="space-between"
+          alignItems="stretch"
+          sx={{ padding: "0.75rem" }}
+        >
             <Logo />
             <Documentation />
-          </div>
-          <div className="sidebarMiddle">
-          </div>
-          <div className="sidebarLower">
+            <Kernel
+              state={waitingForSystem}
+              onClearChat={() => { handleCommand(COMMANDS["clear"]); }}
+              onInterruptKernel={() => { handleCommand(COMMANDS["stop"]); }}
+              onResetKernel={() => { handleCommand(COMMANDS["reset"]); }}
+            />
             <Settings
               models={MODELS}
               selectedModel={selectedModel}
@@ -399,8 +407,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
                 setToggledOptions(val);
               }}
             />
-          </div>
-        </div>
+        </Stack>
         <div className="main">
           <Chat
             chatScrollRef={chatScrollRef}

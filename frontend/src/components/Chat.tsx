@@ -116,11 +116,11 @@ function Message(props: {
 
 export enum WaitingStates {
   SessionTimeout = "Session timeout. Please reload the page.",
-  WaitingForKernel = "Waiting for Kernel connection",
+  WaitingForKernel = "Waiting for kernel connection",
   GeneratingCode = "Generating code",
   RunningCode = "Running code",
   UploadingFile = "Uploading file",
-  Idle = "Idle",
+  Idle = "Ready",
 }
 
 export default function Chat(props: {

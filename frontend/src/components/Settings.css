@@ -1,8 +1,4 @@
-.settings {
-    display: flex;
-    flex-direction: column;
-}
-
-.setting {
-    margin-top: 1em !important;
+label.header {
+    padding: 0.5rem 0;
+    font-size: 1.2rem;
 }

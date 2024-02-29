@@ -56,7 +56,6 @@ class Kernel:
         self._logger.info(f"Start of kernel with workdir {self._workdir} has been requested.")
 
         self._status = "starting"
-        self._put_message("Starting Kernel...", message_type="message_status")
 
         # Cleanup potential leftovers
         shutil.rmtree(self._workdir, ignore_errors=True)
@@ -138,7 +137,6 @@ for function_name, function in AVAILABLE_FUNCTIONS.items():
         self._logger.info("Message Flusher thread started.")
 
         self._status = "idle"
-        self._put_message("Kernel is ready.", message_type="message_status")
 
     @property
     def status(self):

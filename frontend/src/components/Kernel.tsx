@@ -33,8 +33,8 @@ function getIcon(state: WaitingStates) {
                 "@keyframes spin": {
                     "0%": { transform: "rotate(0deg)" },
                     "10%": { transform: "rotate(0deg)" },
-                    "90%": { transform: "rotate(360deg)" },
-                    "100%": { transform: "rotate(360deg)" },
+                    "50%": { transform: "rotate(180deg)" },
+                    "100%": { transform: "rotate(180deg)" },
                 },
               }}/>;
         case WaitingStates.GeneratingCode:

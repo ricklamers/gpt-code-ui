@@ -28,11 +28,12 @@ assert KERNEL_TIMEOUT_S > 0
 
 
 def get_logger(name):
-    logFormatter = logging.Formatter(fmt="%(asctime)s [%(levelname)8s %(name)s]  %(message)s")
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
 
     if not logger.handlers:
+        logFormatter = logging.Formatter(fmt="%(asctime)s [%(levelname)8s %(name)s]  %(message)s")
+
         consoleHandler = logging.StreamHandler(sys.stdout)
         consoleHandler.setLevel(logging.DEBUG if "DEBUG" in os.environ else logging.WARNING)
         consoleHandler.setFormatter(logFormatter)

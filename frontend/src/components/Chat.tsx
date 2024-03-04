@@ -8,7 +8,7 @@ import { MessageDict } from "../App";
 
 import remarkGfm from 'remark-gfm';
 import SyntaxHighlighter from "react-syntax-highlighter";
-import { RefObject } from "react";
+import { RefObject, useRef, useEffect } from "react";
 import ReactMarkdown from 'react-markdown';
 
 
@@ -89,6 +89,35 @@ function Message_HTML(props: { text: string; }) {
 }
 
 
+function Message_3dmol(props: { text: string; }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const found = props.text.match(/3dmolviewer_\d*/);
+
+  console.log(found);
+
+  let text = (props.text
+    .replace(/(viewer_\d+)(\.setSize.*$)/, '$1.resize(); //$2')
+    .replace('https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js', './assets/3Dmol-min.js')
+    .replace('\);\n<\/script>', `\).catch( function(err) {
+      const viewer = document.getElementById("${found}");
+      const textnode = document.createTextNode(\`Execution Error:\n\${err}\`);
+      viewer.parentElement.insertBefore(textnode, viewer);
+    } );\n<\/script>`)
+  );
+  console.log(text);
+
+  useEffect(() => {
+    const node = document.createRange().createContextualFragment(text);
+    console.log(text);
+    if (ref.current) {
+      ref.current.appendChild(node);
+    }
+  }, [ref]);
+
+  return <div className="cell-output-image" ref={ref} />
+}
+
+
 function Message(props: {
   text: string;
   role: string;
@@ -107,6 +136,7 @@ function Message(props: {
     "image/jpeg": Message_JPEG,
     "image/svg+xml": Message_HTML,
     "text/html": Message_HTML,
+    "application/3dmoljs_load.v0": Message_3dmol,
     "message_error": Message_Error,
     "message_raw": Message_HTML,
     "message_status": Message_HTML,

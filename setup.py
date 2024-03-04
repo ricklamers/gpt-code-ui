@@ -12,7 +12,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',  # This field specifies the format of the `long_description`.
     packages=find_packages(),
-    package_data={'gpt_code_ui.webapp': ['static/*', 'static/assets/*']},
+    package_data={'gpt_code_ui.webapp': ['static/*', 'static/assets/*', 'templates/*']},
     install_requires=[
         'ipykernel>=6,<7',
         'snakemq>=1,<2',

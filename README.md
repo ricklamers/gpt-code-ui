@@ -64,3 +64,7 @@ Please do and have a look at the [contributions guide](.github/CONTRIBUTING.md)!
 
 
 Thank you for your interest in this project!
+
+## run in subroutes
+
+set ```APPLICATION_ROOT``` in ```.env``` file, and in proxy set host ```localhost:${WEB_PORT}${your APPLICATION_ROOT}```, just like any other flask app

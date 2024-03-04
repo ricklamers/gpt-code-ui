@@ -19,7 +19,7 @@ from flask_cors import CORS
 from foundry_dev_tools import FoundryRestClient
 from foundry_dev_tools.foundry_api_client import FoundryAPIError
 
-from gpt_code_ui.kernel_program.config import KERNEL_APP_PORT
+from gpt_code_ui.kernel_program import config
 from gpt_code_ui.webapp import llm
 from gpt_code_ui.webapp.prompts import get_system_prompt
 
@@ -210,7 +210,10 @@ def session_id_required(function_to_protect):
         if (session_id := session.get("session_id", None)) is None:
             session_id = str(uuid.uuid4())
             session["session_id"] = session_id
-        return function_to_protect(session_id, *args, **kwargs)
+
+        logger = config.get_logger(f"WebApp {session_id}")
+
+        return function_to_protect(session_id, logger, *args, **kwargs)
 
     return wrapper
 
@@ -232,8 +235,8 @@ def serve_static(path):
 
 @app.route("/api/<path:path>", methods=["GET", "POST"])
 @session_id_required
-def proxy_kernel_manager(session_id, path):
-    backend_url = f"http://localhost:{KERNEL_APP_PORT}/{path}/{session_id}"
+def proxy_kernel_manager(session_id, logger, path):
+    backend_url = f"http://localhost:{config.KERNEL_APP_PORT}/{path}/{session_id}"
 
     try:
         if request.method == "POST":
@@ -251,7 +254,7 @@ def proxy_kernel_manager(session_id, path):
         elif res["type"] == "message_error":
             chat_history[session_id].add_error(res["value"])
 
-        log.debug(session_id, res)
+        logger.debug(session_id, res)
 
     excluded_headers = [
         "content-encoding",
@@ -269,36 +272,40 @@ def proxy_kernel_manager(session_id, path):
 
 @app.route("/download")
 @session_id_required
-def download_file(session_id):
+def download_file(session_id, logger):
     # Get query argument file
     file = request.args.get("file")
     # find out the workspace directory corresponding to the specific session
-    resp = requests.get(f"http://localhost:{KERNEL_APP_PORT}/workdir/{session_id}")
+    resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/workdir/{session_id}")
     if resp.status_code == 200:
         workdir = resp.json()["result"]
     else:
         return resp, resp.status_code
 
+    logger.info(f"Downloading '{file}' from  '{workdir}'.")
     return send_from_directory(workdir, file, as_attachment=True)
 
 
 @app.route("/clear_history", methods=["POST"])
 @session_id_required
-def clear_history(session_id):
+def clear_history(session_id, logger):
+    logger.info("Clearing chat history")
     del chat_history[session_id]
     return jsonify({"result": "success"})
 
 
 @app.route("/generate", methods=["POST"])
 @session_id_required
-def generate_code(session_id):
+def generate_code(session_id, logger):
     requests.post(
-        f"http://localhost:{KERNEL_APP_PORT}/status/{session_id}",
+        f"http://localhost:{config.KERNEL_APP_PORT}/status/{session_id}",
         json={"status": "generating"},
     )
 
     user_prompt = request.json.get("prompt", "")
     model = request.json.get("model", None)
+
+    logger.info(f"Code generation reuqested with model '{model}'. Prompt:\n{user_prompt}")
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -312,16 +319,17 @@ def generate_code(session_id):
         chat_history[session_id].add_answer(text)
 
     requests.post(
-        f"http://localhost:{KERNEL_APP_PORT}/status/{session_id}",
+        f"http://localhost:{config.KERNEL_APP_PORT}/status/{session_id}",
         json={"status": "ready"},
     )
 
+    logger.info(f"\n== Answer ==\n{text}\n\n== Extracted Code ==\n {code}")
     return jsonify({"code": code, "text": text}), status
 
 
 @app.route("/upload", methods=["POST"])
 @session_id_required
-def upload_file(session_id):
+def upload_file(session_id, logger):
     # check if the post request has the file part
     if "file" not in request.files:
         return jsonify({"error": "No file part in the request"}), 400
@@ -331,11 +339,13 @@ def upload_file(session_id):
         return jsonify({"error": "No selected file"}), 400
     if file and allowed_file(file.filename):
         # find out the workspace directory corresponding to the specific session
-        resp = requests.get(f"http://localhost:{KERNEL_APP_PORT}/workdir/{session_id}")
+        resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/workdir/{session_id}")
         if resp.status_code == 200:
             workdir = resp.json()["result"]
         else:
             return resp, resp.status_code
+
+        logger.info(f"Uploading file '{file.filename}' to '{workdir}'")
 
         file_target = os.path.join(workdir, file.filename)
         file.save(file_target)
@@ -348,11 +358,11 @@ def upload_file(session_id):
 
 @app.route("/foundry_files", methods=["GET", "POST"])
 @session_id_required
-def foundry_files(session_id, folder=None):
+def foundry_files(session_id, logger, folder=None):
     try:
         fc = FoundryRestClient()
     except ValueError as e:
-        log.exception(e)
+        logger.exception(e)
         return "Foundry access misconfigured on server", 500
 
     if request.method == "POST":
@@ -360,7 +370,7 @@ def foundry_files(session_id, folder=None):
         dataset_rid = req["dataset_rid"]
 
         # find out the workspace directory corresponding to the specific session
-        resp = requests.get(f"http://localhost:{KERNEL_APP_PORT}/workdir/{session_id}")
+        resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/workdir/{session_id}")
         if resp.status_code == 200:
             workdir = resp.json()["result"]
         else:

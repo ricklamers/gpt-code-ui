@@ -210,10 +210,23 @@ for function_name, function in AVAILABLE_FUNCTIONS.items():
                                 self._put_message(content_data["image/jpeg"], message_type="image/jpeg")
                             elif "image/svg+xml" in content_data:
                                 self._put_message(content_data["image/svg+xml"], message_type="image/svg+xml")
+                            elif "application/3dmoljs_load.v0" in content_data:
+                                # this case must be before "text/html"as the py3Dmol payload contains both options
+                                self._put_message(
+                                    content_data["application/3dmoljs_load.v0"],
+                                    message_type="application/3dmoljs_load.v0",
+                                )
+                            elif "text/html" in content_data:
+                                self._put_message(content_data["text/html"], message_type="text/html")
                             elif "text/plain" in content_data:
                                 self._put_message(
                                     content_data["text/plain"],
-                                    "message_raw" if msg_type == "execute_result" else "message",
+                                    message_type="message_raw" if msg_type == "execute_result" else "message",
+                                )
+                            else:
+                                self._put_message(
+                                    f"Unsupported {msg_type}: {content_data}",
+                                    message_type="message_error",
                                 )
 
                         elif msg_type == "stream":

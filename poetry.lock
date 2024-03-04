@@ -1224,13 +1224,13 @@ test = ["flaky", "ipyparallel", "pre-commit", "pytest (>=7.0)", "pytest-asyncio 
 
 [[package]]
 name = "ipython"
-version = "8.22.1"
+version = "8.22.2"
 description = "IPython: Productive Interactive Computing"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "ipython-8.22.1-py3-none-any.whl", hash = "sha256:869335e8cded62ffb6fac8928e5287a05433d6462e3ebaac25f4216474dd6bc4"},
-    {file = "ipython-8.22.1.tar.gz", hash = "sha256:39c6f9efc079fb19bfb0f17eee903978fe9a290b1b82d68196c641cecb76ea22"},
+    {file = "ipython-8.22.2-py3-none-any.whl", hash = "sha256:3c86f284c8f3d8f2b6c662f885c4889a91df7cd52056fd02b7d8d6195d7f56e9"},
+    {file = "ipython-8.22.2.tar.gz", hash = "sha256:2dcaad9049f9056f1fef63514f176c7d41f930daa78d05b82a176202818f2c14"},
 ]
 
 [package.dependencies]
@@ -2391,6 +2391,20 @@ files = [
 tests = ["pytest"]
 
 [[package]]
+name = "py3dmol"
+version = "2.0.4"
+description = "An IPython interface for embedding 3Dmol.js views in Jupyter notebooks"
+optional = false
+python-versions = "*"
+files = [
+    {file = "py3Dmol-2.0.4-py2.py3-none-any.whl", hash = "sha256:356a3a9fee9c48be9b010228790ce394bd4d90d3fd47448964fcbfa6dc5e0a84"},
+    {file = "py3Dmol-2.0.4.tar.gz", hash = "sha256:07909c587ba7e40d17e2ca9383193ead807af834f9569b108cff784ec4cfb525"},
+]
+
+[package.extras]
+ipython = ["IPython"]
+
+[[package]]
 name = "pyarrow"
 version = "15.0.0"
 description = "Python library for Apache Arrow"
@@ -2751,13 +2765,13 @@ testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "no
 
 [[package]]
 name = "python-dateutil"
-version = "2.8.2"
+version = "2.9.0.post0"
 description = "Extensions to the standard Python datetime module"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 files = [
-    {file = "python-dateutil-2.8.2.tar.gz", hash = "sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86"},
-    {file = "python_dateutil-2.8.2-py2.py3-none-any.whl", hash = "sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9"},
+    {file = "python-dateutil-2.9.0.post0.tar.gz", hash = "sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3"},
+    {file = "python_dateutil-2.9.0.post0-py2.py3-none-any.whl", hash = "sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427"},
 ]
 
 [package.dependencies]
@@ -3971,4 +3985,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b3f9eda9f20b7821f7f38bd89fff1c8a1a977d00e49204d05d7a6fe79641e7c2"
+content-hash = "09985f52b1d89c279703dc2ab8c5e888ccb0668fb1a6a1ea9a05acb234a4dc57"

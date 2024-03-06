@@ -6,9 +6,10 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import { MessageDict } from "../App";
 
+import { Resizable } from 're-resizable';
 import remarkGfm from 'remark-gfm';
 import SyntaxHighlighter from "react-syntax-highlighter";
-import { RefObject, useRef, useEffect } from "react";
+import React, { RefObject, useRef, useEffect } from "react";
 import ReactMarkdown from 'react-markdown';
 
 
@@ -74,18 +75,58 @@ function Message_Error(props: { text: string; }) {
 }
 
 
+function Message_Resizable_Image(component: React.ReactElement, initial_height: string | number = 'auto', lockAspectRatio = true) {
+  return (
+    <div className="cell-output-image">
+       <Resizable
+          defaultSize={{ width: 600, height: initial_height }}
+          enable={{ top: false, right: true, bottom: true, left: false, topRight: false, bottomRight: true, bottomLeft: false, topLeft: false }}
+          handleStyles={{
+            bottomRight: {
+              marginTop: -9,
+              marginLeft: -9,
+              top: "100%",
+              left: "100%",
+              cursor: "nwse-resize",
+              border: "2px dashed #999",
+              borderLeft: "none",
+              borderTop: "none",
+              borderColor: "rgb(15, 105, 175)",
+              width: 15,
+              height: 15,
+              boxSizing: "border-box",
+              zIndex: 1
+            },
+          }}
+          lockAspectRatio={ lockAspectRatio }
+        >
+          { component }
+      </Resizable>
+    </div>
+  );
+}
+
+
 function Message_PNG(props: { text: string; }) {
-  return <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/png;base64,${props.text}' />` }} />
+  const component = <img src={`data:image/png;base64,${props.text}`} style={{ width: "100%", height: "100%", objectFit: "contain" }}/>;
+  return Message_Resizable_Image( component );
 }
 
 
 function Message_JPEG(props: { text: string; }) {
-  return <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `<img src='data:image/jpeg;base64,${props.text}' />` }} />
+  const component = <img src={`data:image/jpeg;base64,${props.text}`} style={{ width: "100%", height: "100%", objectFit: "contain" }}/>;
+  return Message_Resizable_Image( component );
+}
+
+
+function Message_SVG(props: { text: string; }) {
+  const component = <img src={`data:image/svg+xml;utf8,${encodeURIComponent(props.text)}`} style={{ width: "100%", height: "100%", objectFit: "contain" }}/>;
+  return Message_Resizable_Image( component );
 }
 
 
 function Message_HTML(props: { text: string; }) {
-  return <div className="cell-output-image" dangerouslySetInnerHTML={{ __html: `${props.text}` }} />
+  return <div className="cell-output" dangerouslySetInnerHTML={{ __html: `${props.text}` }} />
 }
 
 
@@ -93,28 +134,31 @@ function Message_3dmol(props: { text: string; }) {
   const ref = useRef<HTMLDivElement>(null);
   const found = props.text.match(/3dmolviewer_\d*/);
 
-  console.log(found);
-
   let text = (props.text
     .replace(/(viewer_\d+)(\.setSize.*$)/, '$1.resize(); //$2')
     .replace('https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js', './assets/3Dmol-min.js')
-    .replace('\);\n<\/script>', `\).catch( function(err) {
+    .replace('\);\n<\/script>', `\).then( function() {
       const viewer = document.getElementById("${found}");
-      const textnode = document.createTextNode(\`Execution Error:\n\${err}\`);
-      viewer.parentElement.insertBefore(textnode, viewer);
-    } );\n<\/script>`)
+      viewer.style.width = "100%";
+      viewer.style.height = "100%";
+    }).catch( function(err) {
+        const viewer = document.getElementById("${found}");
+        const textnode = document.createTextNode(\`Execution Error:\n\${err}\`);
+        viewer.parentElement.insertBefore(textnode, viewer);
+        }
+      );\n<\/script>`
+    )
   );
-  console.log(text);
 
   useEffect(() => {
     const node = document.createRange().createContextualFragment(text);
-    console.log(text);
     if (ref.current) {
       ref.current.appendChild(node);
     }
   }, [ref]);
 
-  return <div className="cell-output-image" ref={ref} />
+  const component = <div ref={ref} style={{ width: "100%", height: "100%", objectFit: "contain" }} />;
+  return Message_Resizable_Image(component, '400px', false);
 }
 
 
@@ -134,7 +178,7 @@ function Message(props: {
   const Message_Types = {
     "image/png": Message_PNG,
     "image/jpeg": Message_JPEG,
-    "image/svg+xml": Message_HTML,
+    "image/svg+xml": Message_SVG,
     "text/html": Message_HTML,
     "application/3dmoljs_load.v0": Message_3dmol,
     "message_error": Message_Error,

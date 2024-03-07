@@ -5,7 +5,7 @@ import Documentation from "./components/Documentation";
 import Kernel from "./components/Kernel";
 import Settings from "./components/Settings";
 import Chat, { WaitingStates } from "./components/Chat";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -48,7 +48,7 @@ function App() {
     },
   };
 
-  let [MODELS, setModels] = useState<{displayName: string, name: string}[]>([]);
+  const [MODELS, setModels] = useState<{displayName: string, name: string}[]>([]);
 
   useEffect(() => {
     const getModels = async () => {
@@ -58,21 +58,21 @@ function App() {
         setModels(json);
       } catch (e) {
         console.error(e);
-      };
+      }
     };
 
     getModels();
  }, []);
 
-  let [selectedModel, setSelectedModel] = useLocalStorage<string>(
+  const [selectedModel, setSelectedModel] = useLocalStorage<string>(
     "model",
     "gpt-3.5-turbo"
   );
 
-  let [toggledOptions, setToggledOptions] = React.useState<string[]>(['svg', ]);
+  const [toggledOptions, setToggledOptions] = React.useState<string[]>(['svg', ]);
 
-  let [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
-  let [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
+  const [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
+  const [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
 
   const selectFoundryFolder = async (folder: string | undefined) => {
     setFoundryFolder(folder);
@@ -95,8 +95,8 @@ function App() {
     } catch (e) {
       console.error(e);
       setFoundryAvailableDatasets(undefined);
-    };
-  }
+    }
+  };
 
   useEffect(() => {
     selectFoundryFolder(foundryFolder);
@@ -123,30 +123,28 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
     tabID = uuidv4();
   }, []);
 
-  let [otherTabDetected, setOtherTabDetected] = useState(false);
+  const [otherTabDetected, setOtherTabDetected] = useState(false);
 
-  const channel = new BroadcastChannel('cross-tab-communication');
-  channel.addEventListener('message', (msg) => {
-    if (msg.data.type == 'new tab') {
-      setOtherTabDetected(msg.data.id != tabID);
-    }
-  });
+  const continueSession = useCallback(() => {
+    const channel = new BroadcastChannel('cross-tab-communication');
+    channel.addEventListener('message', (msg) => {
+      if (msg.data.type == 'new tab') {
+        setOtherTabDetected(msg.data.id != tabID);
+      }
+    });
 
-  const continueSession = () => {
     channel.postMessage({
       type: 'new tab',
       id: tabID,
     });
-  };
+  }, []);
 
   useEffect(() => {
     continueSession();
-  }, []);
+  }, [continueSession]);
 
-
-
-  let [messages, setMessages] = useState<MessageDict[]>(DEFAULT_MESSAGES);
-  let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
+  const [messages, setMessages] = useState<MessageDict[]>(DEFAULT_MESSAGES);
+  const [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
   const submitCode = async (code: string) => {
@@ -216,7 +214,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
         return;
       }
 
-      if (!!code) {
+      if (code) {
         submitCode(code);
         setWaitingForSystem(WaitingStates.RunningCode);
       } else {
@@ -230,59 +228,12 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
     }
   };
 
-  async function getApiData() {
-    if (document.hidden || otherTabDetected){
-      return;
-    }
-
-    try {
-      let response = await fetch(`${Config.API_ADDRESS}/api`, {redirect: 'manual'});
-      if (response.type === 'opaqueredirect') {
-        // redirect occurs in the AppService when a new login is required. We could reload automatically,
-        // but that would lead to the user loosing their previous results.
-        setWaitingForSystem(WaitingStates.SessionTimeout);
-      } else {
-        let data = await response.json();
-
-        if (data.status === "starting") {
-          setWaitingForSystem(WaitingStates.WaitingForKernel);
-        } else if (data.status === "ready") {
-          setWaitingForSystem(WaitingStates.Idle);
-        } else if (data.status === "idle") {
-          setWaitingForSystem(WaitingStates.Idle);
-        } else if (data.status === "generating") {
-          setWaitingForSystem(WaitingStates.GeneratingCode);
-        } else if (data.status === "busy") {
-          setWaitingForSystem(WaitingStates.RunningCode);
-        } else {
-          setWaitingForSystem(WaitingStates.WaitingForKernel);
-        }
-
-        data.results.forEach(function (result: {value: string, type: string}) {
-          if (result.value.trim().length == 0) {
-            return;
-          }
-
-          addMessage({ text: result.value, type: result.type, role: "system" });
-        });
-      }
-    } catch (error) {
-      if (error instanceof(TypeError)) {
-        if (waitingForSystem != WaitingStates.WaitingForKernel) {
-          setWaitingForSystem(WaitingStates.WaitingForKernel);
-        }
-      } else {
-        console.error('Error while fetching from api: ' + error);
-      }
-    }
-  }
-
   function completeUpload(message: string) {
     addMessage({ text: message, type: "message", role: "upload" });
     setWaitingForSystem(WaitingStates.Idle);
   }
 
-  function startUpload(_: string) {
+  function startUpload() {
     setWaitingForSystem(WaitingStates.UploadingFile);
   }
 
@@ -312,14 +263,62 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
         console.error(e);
       } finally {
         setWaitingForSystem(WaitingStates.Idle);
-      };
+      }
     }
   }
 
   React.useEffect(() => {
+
+    async function getApiData() {
+      if (document.hidden || otherTabDetected){
+        return;
+      }
+
+      try {
+        const response = await fetch(`${Config.API_ADDRESS}/api`, {redirect: 'manual'});
+        if (response.type === 'opaqueredirect') {
+          // redirect occurs in the AppService when a new login is required. We could reload automatically,
+          // but that would lead to the user loosing their previous results.
+          setWaitingForSystem(WaitingStates.SessionTimeout);
+        } else {
+          const data = await response.json();
+
+          if (data.status === "starting") {
+            setWaitingForSystem(WaitingStates.WaitingForKernel);
+          } else if (data.status === "ready") {
+            setWaitingForSystem(WaitingStates.Idle);
+          } else if (data.status === "idle") {
+            setWaitingForSystem(WaitingStates.Idle);
+          } else if (data.status === "generating") {
+            setWaitingForSystem(WaitingStates.GeneratingCode);
+          } else if (data.status === "busy") {
+            setWaitingForSystem(WaitingStates.RunningCode);
+          } else {
+            setWaitingForSystem(WaitingStates.WaitingForKernel);
+          }
+
+          data.results.forEach(function (result: {value: string, type: string}) {
+            if (result.value.trim().length == 0) {
+              return;
+            }
+
+            addMessage({ text: result.value, type: result.type, role: "system" });
+          });
+        }
+      } catch (error) {
+        if (error instanceof(TypeError)) {
+          if (waitingForSystem != WaitingStates.WaitingForKernel) {
+            setWaitingForSystem(WaitingStates.WaitingForKernel);
+          }
+        } else {
+          console.error('Error while fetching from api: ' + error);
+        }
+      }
+    }
+
     const interval = setInterval(getApiData, 1000);
     return () => clearInterval(interval);
-  }, [getApiData]);
+  }, []);
 
   React.useEffect(() => {
     // Scroll down container by setting scrollTop to the height of the container
@@ -329,14 +328,14 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
 
   // Capture <a> clicks for download links
   React.useEffect(() => {
-    const clickHandler = (event: any) => {
-      let element = event.target;
+    const clickHandler = (event: MouseEvent) => {
+      const element = event.target as HTMLElement;
 
       // If an <a> element was found, prevent default action and do something else
       if (element != null && element.tagName === 'A') {
         // Check if href starts with /download
 
-        if (element.getAttribute("href").startsWith(`/download`)) {
+        if (element.getAttribute("href")?.startsWith(`/download`)) {
           event.preventDefault();
 
           // Make request to ${Config.WEB_ADDRESS}/download instead

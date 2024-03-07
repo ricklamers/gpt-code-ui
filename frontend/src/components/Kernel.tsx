@@ -76,9 +76,9 @@ function getIcon(state: WaitingStates) {
 
 export default function Kernel(props: {
   state: WaitingStates;
-  onClearChat: any;
-  onInterruptKernel: any;
-  onResetKernel: any;
+  onClearChat: React.MouseEventHandler<HTMLButtonElement>;
+  onInterruptKernel: React.MouseEventHandler<HTMLButtonElement>;
+  onResetKernel: React.MouseEventHandler<HTMLButtonElement>;
 }) {
   return (
     <>

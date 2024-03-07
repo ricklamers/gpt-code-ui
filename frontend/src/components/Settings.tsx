@@ -15,23 +15,27 @@ import Stack from '@mui/material/Stack';
 export default function Settings(props: {
   models: Array<{ name: string; displayName: string }>;
   selectedModel: string;
-  onSelectModel: any;
+  onSelectModel: (val: string) => void;
   toggledOptions: string[];
-  onToggledOptions: any;
+  onToggledOptions: (val: string[]) => void;
 }) {
   const options: Array<{ name: string; displayName: string }> = [
     {name: 'svg', displayName: 'Vector Graphics'},
   ];
 
+  const models = props.models;
+  const selectedModel = props.selectedModel;
+  const onSelectModel = props.onSelectModel;
+
   useEffect(() => {
-    if (props.models.length) {
-        if (undefined === props.models.find(e => e.name === props.selectedModel)) {
-          props.onSelectModel(props.models[0].name);
+    if (models.length) {
+        if (undefined === models.find(e => e.name === selectedModel)) {
+          onSelectModel(models[0].name);
         } else {
-          props.onSelectModel(props.selectedModel);
+          onSelectModel(selectedModel);
         }
       }
-  }, [props.models]);
+  }, [models, selectedModel, onSelectModel]);
 
   return (
     <>

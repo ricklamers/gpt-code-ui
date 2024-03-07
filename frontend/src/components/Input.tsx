@@ -32,11 +32,11 @@ export default function Input(props: {
   onSelectFoundryDataset: (name: string) => void; }
 ) {
 
-  let fileInputRef = useRef<HTMLInputElement>(null);
-  let [inputIsFocused, setInputIsFocused] = useState<boolean>(false);
-  let [userInput, setUserInput] = useState<string>('');
-  let [foundryDialogOpen, setFoundryDialogOpen] = useState(false);
-  let [messageReplay, setMessageReplay] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inputIsFocused, setInputIsFocused] = useState<boolean>(false);
+  const [userInput, setUserInput] = useState<string>('');
+  const [foundryDialogOpen, setFoundryDialogOpen] = useState(false);
+  const [messageReplay, setMessageReplay] = useState(0);
 
   const handleFoundryDialogClose = (value: string) => {
     setFoundryDialogOpen(false);

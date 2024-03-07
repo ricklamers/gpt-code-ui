@@ -25,7 +25,7 @@ function Message_Loader(props: { text: string; }) {
 
 function Message_Generic(props: { text: string; }) {
   const isMarkdown = (input: string) => {
-    const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*|\|.*\|/g;
+    const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|#.*|!\[.*\]\(.*\)|`.*`|- .*|\|.*\|/g;
     return mdRegex.test(input);
   };
 
@@ -35,6 +35,7 @@ function Message_Generic(props: { text: string; }) {
         children={props.text}
         remarkPlugins={[remarkGfm]}
         components={{
+          /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
           code({node, inline, className, children, style, ...props}) {
             const match = /language-(\w+)/.exec(className || '')
             return !inline ? (
@@ -133,11 +134,10 @@ function Message_HTML(props: { text: string; }) {
 function Message_3dmol(props: { text: string; }) {
   const ref = useRef<HTMLDivElement>(null);
   const found = props.text.match(/3dmolviewer_\d*/);
-
-  let text = (props.text
+  const text = (props.text
     .replace(/(viewer_\d+)(\.setSize.*$)/, '$1.resize(); //$2')
     .replace('https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.4/3Dmol-min.js', './assets/3Dmol-min.js')
-    .replace('\);\n<\/script>', `\).then( function() {
+    .replace(');\n</script>', `).then( function() {
       const viewer = document.getElementById("${found}");
       viewer.style.width = "100%";
       viewer.style.height = "100%";
@@ -146,7 +146,7 @@ function Message_3dmol(props: { text: string; }) {
         const textnode = document.createTextNode(\`Execution Error:\n\${err}\`);
         viewer.parentElement.insertBefore(textnode, viewer);
         }
-      );\n<\/script>`
+      );\n</script>`
     )
   );
 
@@ -155,7 +155,7 @@ function Message_3dmol(props: { text: string; }) {
     if (ref.current) {
       ref.current.appendChild(node);
     }
-  }, [ref]);
+  }, [ref, text]);
 
   const component = <div ref={ref} style={{ width: "100%", height: "100%", objectFit: "contain" }} />;
   return Message_Resizable_Image(component, '400px', false);
@@ -168,7 +168,7 @@ function Message(props: {
   type: string;
   showLoader?: boolean;
 }) {
-  let ICONS = {
+  const ICONS = {
     "upload": <FileUploadIcon />,
     "generator": <VoiceChatIcon />,
     "system": <TerminalIcon />,

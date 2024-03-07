@@ -11,25 +11,25 @@ import SyntaxHighlighter from "react-syntax-highlighter";
 import { RefObject } from "react";
 import ReactMarkdown from 'react-markdown';
 
+const ICONS = {
+  "upload": <FileUploadIcon />,
+  "generator":  <VoiceChatIcon />,
+  "system": <TerminalIcon />,
+  "user": <PersonIcon />,
+};
+
+const isMarkdown = (input: string) => {
+  const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|#.*|!\[.*\]\(.*\)|`.*`|- .*|\|.*\|/g;
+  return mdRegex.test(input);
+};
+
 function Message(props: {
   text: string;
   role: string;
   type: string;
   showLoader?: boolean;
 }) {
-  let { text, role } = props;
-
-  const isMarkdown = (input: string) => {
-    const mdRegex = /\[.*\]\(.*\)|\*\*.*\*\*|__.*__|\#.*|\!\[.*\]\(.*\)|`.*`|\- .*|\|.*\|/g;
-    return mdRegex.test(input);
-  };
-
-  let ICONS = {
-    "upload": <FileUploadIcon />,
-    "generator":  <VoiceChatIcon />,
-    "system": <TerminalIcon />,
-    "user": <PersonIcon />,
-  };
+  const { text, role } = props;
 
   return (
     <div className={"message " + role}>

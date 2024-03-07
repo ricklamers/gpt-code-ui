@@ -230,6 +230,17 @@ def download_file():
     # make sure to set required headers to make it download the file
     return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
 
+@app.route('/history', methods=['POST'])
+def get_history():
+    return jsonify({"history": message_buffer.get_string()})
+
+@app.route('/edit-history', methods=['POST'])
+def edit_history():
+    history = request.json.get('history', '')
+    message_buffer.data.clear()
+    message_buffer.len = 0
+    message_buffer.append(history)
+    return jsonify({"result": "success"})
 
 @app.route('/inject-context', methods=['POST'])
 def inject_context():

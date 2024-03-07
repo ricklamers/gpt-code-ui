@@ -35,3 +35,11 @@ repos:
       - id: mypy
         additional_dependencies: [types-requests==2.31.0.20240106]
         args: [--implicit-optional]
+  - repo: local
+    hooks:
+    - id: eslint
+      name: eslint_frontend
+      entry: ./frontend/node_modules/.bin/eslint --fix
+      files: ^frontend/.*\.[jt]sx?$  # *.js, *.jsx, *.ts and *.tsx
+      types: [file]
+      language: system

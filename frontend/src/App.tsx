@@ -74,8 +74,7 @@ function App() {
   const [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
   const [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
 
-  const selectFoundryFolder = async (folder: string | undefined) => {
-    setFoundryFolder(folder);
+  const getAvailableFoundryDatasets = async (folder: string | undefined) => {
     try {
       if (folder != undefined) {
         const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files?` + new URLSearchParams({folder: folder}));
@@ -85,12 +84,8 @@ function App() {
         } else {
           setFoundryAvailableDatasets(undefined);
         }
-
       } else {
-        const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files`);
-        const json = await response.json();
-        setFoundryFolder(json.folder);
-        setFoundryAvailableDatasets(json.datasets);
+        setFoundryAvailableDatasets(undefined);
       }
     } catch (e) {
       console.error(e);
@@ -99,8 +94,8 @@ function App() {
   };
 
   useEffect(() => {
-    selectFoundryFolder(foundryFolder);
-  }, []);
+    getAvailableFoundryDatasets(foundryFolder);
+  }, [foundryFolder]);
 
   const DEFAULT_MESSAGES = Array.from([
     {
@@ -318,7 +313,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
 
     const interval = setInterval(getApiData, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [otherTabDetected, waitingForSystem, setWaitingForSystem]);
 
   React.useEffect(() => {
     // Scroll down container by setting scrollTop to the height of the container
@@ -419,7 +414,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
             onSendMessage={sendMessage}
             onCompletedUpload={completeUpload}
             onStartUpload={startUpload}
-            onSelectFoundryFolder={selectFoundryFolder}
+            onSelectFoundryFolder={setFoundryFolder}
             foundryFolder={foundryFolder}
             foundryAvailableDatasets={foundryAvailableDatasets}
             onSelectFoundryDataset={selectFoundryDataset}

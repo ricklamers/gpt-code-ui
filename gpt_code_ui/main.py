@@ -7,7 +7,6 @@ import sys
 import logging
 import asyncio
 import time
-import webbrowser
 
 from multiprocessing import Process
 
@@ -84,8 +83,6 @@ def main():
                 time.sleep(0.1)
         
         print_banner()    
-        
-        webbrowser.open(APP_URL)
 
         webapp_process.join()
         kernel_program_process.join()

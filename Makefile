@@ -24,7 +24,9 @@ compile_frontend:
 	npm install && \
 	VITE_APP_VERSION=$$(grep -e "^\s*version='[^']*'" ../setup.py | cut -d "'" -f 2) npm run build && \
 	find ../gpt_code_ui/webapp/static -mindepth 1 ! -name '.gitignore' -delete && \
-	rsync -av dist/ ../gpt_code_ui/webapp/static
+	rsync -av dist/ ../gpt_code_ui/webapp/static && \
+	cd .. && \
+	python3 scripts/create_template.py
 
 bundle_pypi:
 	rm -rf dist build && \

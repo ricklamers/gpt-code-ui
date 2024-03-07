@@ -2,7 +2,7 @@ import "./App.css";
 import Input from "./components/Input";
 import Sidebar from "./components/Sidebar";
 import Chat, { WaitingStates } from "./components/Chat";
-import React, { useState, useEffect  } from "react";
+import React, { useState, useEffect } from "react";
 import Config from "./config";
 import { useLocalStorage } from "usehooks-ts";
 
@@ -15,7 +15,7 @@ export type MessageDict = {
 function App() {
   const COMMANDS = ["reset"];
 
-  let [MODELS, setModels] = useState([{displayName: "GPT-3.5", name: "gpt-3.5-turbo"}]);
+  const [MODELS, setModels] = useState([{ displayName: "GPT-3.5", name: "gpt-3.5-turbo" }]);
 
   useEffect(() => {
     const getModels = async () => {
@@ -25,20 +25,20 @@ function App() {
         setModels(json);
       } catch (e) {
         console.error(e);
-      };
+      }
     };
 
     getModels();
- }, []);
+  }, []);
 
-  let [selectedModel, setSelectedModel] = useLocalStorage<string>(
+  const [selectedModel, setSelectedModel] = useLocalStorage<string>(
     "model",
     MODELS[0].name
   );
 
-  let [openAIKey, setOpenAIKey] = useLocalStorage<string>("OpenAIKey", "");
+  const [openAIKey, setOpenAIKey] = useLocalStorage<string>("OpenAIKey", "");
 
-  let [messages, setMessages] = useState<Array<MessageDict>>(
+  const [messages, setMessages] = useState<Array<MessageDict>>(
     Array.from([
       {
         text: "Hello! I'm a GPT Code assistant. Ask me to do something for you! Pro tip: you can upload a file and I'll be able to use it.",
@@ -52,7 +52,7 @@ function App() {
       },
     ])
   );
-  let [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
+  const [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(
     WaitingStates.Idle
   );
   const chatScrollRef = React.useRef<HTMLDivElement>(null);
@@ -65,12 +65,37 @@ function App() {
       },
       body: JSON.stringify({ command: code }),
     })
-      .then(() => {})
+      .then(() => {
+        // do nothing
+      })
       .catch((error) => console.error("Error:", error));
   };
 
+  const prependHistory = (history: string) => {
+    setMessages((state) => {
+      return [
+        { text: history, type: "message", role: "system" },
+        ...state,
+      ];
+    });
+  };
+
+  const loadHistory = () => {
+    fetch(`${Config.API_ADDRESS}/history`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        prependHistory(data.history);
+      })
+      .catch((error) => console.error("Error:", error));
+  }
+
   const addMessage = (message: MessageDict) => {
-    setMessages((state: any) => {
+    setMessages((state) => {
       return [...state, message];
     });
   };
@@ -86,7 +111,9 @@ function App() {
         },
         body: JSON.stringify({}),
       })
-        .then(() => {})
+        .then(() => {
+          // do nothing
+        })
         .catch((error) => console.error("Error:", error));
     }
   };
@@ -126,8 +153,8 @@ function App() {
         setWaitingForSystem(WaitingStates.Idle);
         return;
       }
-      
-      if (!!code) {
+
+      if (code) {
         submitCode(code);
         setWaitingForSystem(WaitingStates.RunningCode);
       } else {
@@ -140,23 +167,6 @@ function App() {
       );
     }
   };
-
-  async function getApiData() {
-    if(document.hidden){
-      return;
-    }
-    
-    let response = await fetch(`${Config.API_ADDRESS}/api`);
-    let data = await response.json();
-    data.results.forEach(function (result: {value: string, type: string}) {
-      if (result.value.trim().length == 0) {
-        return;
-      }
-
-      addMessage({ text: result.value, type: result.type, role: "system" });
-      setWaitingForSystem(WaitingStates.Idle);
-    });
-  }
 
   function completeUpload(message: string) {
     addMessage({ text: message, type: "message", role: "upload" });
@@ -172,7 +182,9 @@ function App() {
         prompt: message,
       }),
     })
-      .then(() => {})
+      .then(() => {
+        // do nothing
+      })
       .catch((error) => console.error("Error:", error));
   }
 
@@ -181,9 +193,26 @@ function App() {
   }
 
   React.useEffect(() => {
+    async function getApiData() {
+      if (document.hidden) {
+        return;
+      }
+
+      const response = await fetch(`${Config.API_ADDRESS}/api`);
+      const data = await response.json();
+      data.results.forEach(function (result: { value: string, type: string }) {
+        if (result.value.trim().length == 0) {
+          return;
+        }
+
+        addMessage({ text: result.value, type: result.type, role: "system" });
+        setWaitingForSystem(WaitingStates.Idle);
+      });
+    }
+
     const interval = setInterval(getApiData, 1000);
     return () => clearInterval(interval);
-  }, [getApiData]);
+  }, [addMessage, setWaitingForSystem]);
 
   React.useEffect(() => {
     // Scroll down container by setting scrollTop to the height of the container
@@ -193,20 +222,22 @@ function App() {
 
   // Capture <a> clicks for download links
   React.useEffect(() => {
+    loadHistory();
+
     const clickHandler = (event: any) => {
-      let element = event.target;
-      
+      const element = event.target;
+
       // If an <a> element was found, prevent default action and do something else
       if (element != null && element.tagName === 'A') {
         // Check if href starts with /download
-        
+
         if (element.getAttribute("href").startsWith(`/download`)) {
           event.preventDefault();
 
           // Make request to ${Config.WEB_ADDRESS}/download instead
           // make it by opening a new tab
           window.open(`${Config.WEB_ADDRESS}${element.getAttribute("href")}`);
-        }        
+        }
       }
     };
 
@@ -217,7 +248,7 @@ function App() {
     return () => {
       document.removeEventListener('click', clickHandler);
     };
-  }, []); 
+  }, []);
 
   return (
     <>

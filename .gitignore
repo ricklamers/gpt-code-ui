@@ -20,3 +20,6 @@ __pycache__/
 
 dist/
 build/
+
+gpt_code_ui/webapp/static
+gpt_code_ui/webapp/templates

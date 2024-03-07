@@ -12,7 +12,7 @@ import pandas as pd
 from collections import deque
 
 from flask_cors import CORS
-from flask import Flask, request, jsonify, send_from_directory, Response
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response
 from dotenv import load_dotenv
 
 from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
@@ -22,6 +22,7 @@ load_dotenv('.env')
 openai.api_version = os.environ.get("OPENAI_API_VERSION")
 openai.log = os.getenv("OPENAI_API_LOGLEVEL")
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
+APPLICATION_ROOT = os.environ.get("APPLICATION_ROOT", "/")
 
 if openai.api_type == "open_ai":
     AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))
@@ -182,18 +183,15 @@ cli.show_server_banner = lambda *x: None
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+app.config['APPLICATION_ROOT'] = APPLICATION_ROOT
+app.jinja_env.globals['APPLICATION_ROOT'] = APPLICATION_ROOT
 CORS(app)
 
 
 @app.route('/')
 def index():
 
-    # Check if index.html exists in the static folder
-    if not os.path.exists(os.path.join(app.root_path, 'static/index.html')):
-        print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
-
-    return send_from_directory('static', 'index.html')
+    return render_template('index.html')
 
 
 @app.route("/models")
@@ -232,6 +230,17 @@ def download_file():
     # make sure to set required headers to make it download the file
     return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
 
+@app.route('/history', methods=['POST'])
+def get_history():
+    return jsonify({"history": message_buffer.get_string()})
+
+@app.route('/edit-history', methods=['POST'])
+def edit_history():
+    history = request.json.get('history', '')
+    message_buffer.data.clear()
+    message_buffer.len = 0
+    message_buffer.append(history)
+    return jsonify({"result": "success"})
 
 @app.route('/inject-context', methods=['POST'])
 def inject_context():

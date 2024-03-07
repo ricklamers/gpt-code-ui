@@ -19,9 +19,9 @@ import changelog from "../../public/assets/Changelog.md"
 
 
 export default function Documentation() {
-  let [demoDialogOpen, setDemoDialogOpen] = useState(false);
-  let [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(true);
-  let [changelogDialogOpen, setChangelogDialogOpen] = useState(false);
+  const [demoDialogOpen, setDemoDialogOpen] = useState(false);
+  const [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(true);
+  const [changelogDialogOpen, setChangelogDialogOpen] = useState(false);
 
   return (
     <>

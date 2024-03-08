@@ -4,6 +4,7 @@ An open source implementation of OpenAI's ChatGPT [Code interpreter](https://ope
 
 Simply ask the OpenAI model to do something and it will generate & execute the code for you.
 
+This project is an extended and further developed fork of of [Rick Lamer's GPT Code UI](https://github.com/ricklamers/gpt-code-ui).
 Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
 ## User interface
@@ -12,7 +13,7 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 ## Features
 - File upload
 - File download
-- Dataset Download from Palantir Foundry
+- Dataset Download from Palantir Foundry using [Foundry Dev Tools](https://github.com/emdgroup/foundry-dev-tools)
 - Context awareness (it can refer to your previous messages)
 - Generate code
 - Run code (Python kernel)
@@ -95,6 +96,18 @@ NO_INTERNET_AVAILABLE=0
 OPENAI_API_LOGLEVEL=debug
 FOUNDRY_DATA_FOLDER=/Path/To/Folder/data
 ```
+Then call
+```
+# build the frontend and inject it into the main application, you will need Node.js and Vite to be installed for this
+make compile_frontend
+
+# the following only required on recent MacOS, see https://stackoverflow.com/a/52230415/10984529
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
+# finally, run all required services
+python gpt_code_ui/main.py
+```
+This should open a browser window, navigating you to [http://localhost:8080](http://localhost:8080), where the application is running.
 
 ### Running the AppService Container Locally with Podman
 Create a file `.app_service_config.json` that contains the content of the `APP_SERVICE_CONFIG` variable.

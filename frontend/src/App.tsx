@@ -381,6 +381,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           justifyContent="space-between"
           alignItems="stretch"
           sx={{ padding: "0.75rem" }}
+          className="sidebar"
         >
             <Logo />
             <Documentation />

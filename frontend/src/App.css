@@ -21,3 +21,7 @@
   background-position: right bottom;
   background-repeat: no-repeat;
 }
+
+.sidebar {
+  background-color: rgb(255, 255, 255);
+}

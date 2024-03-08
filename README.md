@@ -10,6 +10,9 @@ Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 ## User interface
 ![User Interface](UserInterface.png)
 
+## Demo Video
+![Demo Video](frontend/public/assets/GPT Code UI.mp4)
+
 ## Features
 - File upload
 - File download

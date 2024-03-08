@@ -13,7 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import VideoChatIcon from '@mui/icons-material/VideoChat';
 import ListAltIcon from '@mui/icons-material/ListAlt';
-// TODO: import demo_video from "../../public/assets/DemoVideo.mp4";
+import demo_video from "../../public/assets/GPT Code UI.mp4";
 import disclaimer from "../../public/assets/Disclaimer.md"
 import changelog from "../../public/assets/Changelog.md"
 
@@ -33,7 +33,7 @@ export default function Documentation() {
         <DialogContent sx={{ display: 'flex', flexDirection: 'column' }}>
           <FormControl fullWidth>
             <ReactPlayer
-              // url={demo_video}
+              url={demo_video}
               controls={true}
               width="90vw"
               height="min(50vw, 85vh)"

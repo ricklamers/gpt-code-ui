@@ -7,11 +7,8 @@ Simply ask the OpenAI model to do something and it will generate & execute the c
 This project is an extended and further developed fork of of [Rick Lamer's GPT Code UI](https://github.com/ricklamers/gpt-code-ui).
 Read the [blog post](https://ricklamers.io/posts/gpt-code) to find out more.
 
-## User interface
-![User Interface](UserInterface.png)
-
 ## Demo Video
-![Demo Video](frontend/public/assets/GPT Code UI.mp4)
+![Demo Video](https://github.com/dasmy/gpt-code-ui/assets/5322274/29f2ad23-147f-4c8b-aaa2-d4bf4721d294)
 
 ## Features
 - File upload

@@ -166,7 +166,7 @@ function Message(props: {
   text: string;
   role: string;
   type: string;
-  showLoader?: boolean;
+  showCode: boolean;
 }) {
   const ICONS = {
     "upload": <FileUploadIcon />,
@@ -186,22 +186,27 @@ function Message(props: {
     "message_status": Message_HTML,
     "message_loader": Message_Loader,
     "message": Message_Generic,
+    "message_generated": Message_Generic,
   };
 
   const Message_Type = Message_Types[props.type as keyof typeof Message_Types] || Message_Generic;
 
-  return (
-    <div className={"message " + props.role}>
-      <div className="avatar-holder">
-        <div className="avatar">
-          { ICONS[props.role as keyof typeof ICONS] }
+  if (!props.showCode && (props.type === "message_generated")) {
+    return <></>;
+  } else {
+    return (
+      <div className={"message " + props.role}>
+        <div className="avatar-holder">
+          <div className="avatar">
+            { ICONS[props.role as keyof typeof ICONS] }
+          </div>
+        </div>
+        <div className="message-body">
+          <Message_Type text={props.text} />
         </div>
       </div>
-      <div className="message-body">
-        <Message_Type text={props.text} />
-      </div>
-    </div>
-  );
+    );
+  }
 }
 
 
@@ -218,6 +223,7 @@ export default function Chat(props: {
   waitingForSystem: WaitingStates;
   chatScrollRef: RefObject<HTMLDivElement>;
   messages: Array<MessageDict>;
+  showCode: boolean;
 }) {
   return (
     <div className="chat-messages" ref={props.chatScrollRef}>
@@ -228,6 +234,7 @@ export default function Chat(props: {
             text={message.text}
             role={message.role}
             type={message.type}
+            showCode={props.showCode}
           />
         );
       })}
@@ -236,7 +243,7 @@ export default function Chat(props: {
           text={props.waitingForSystem}
           role="system"
           type="message_loader"
-          showLoader={true}
+          showCode={false}
         />
       ) : null}
     </div>

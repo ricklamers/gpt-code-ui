@@ -14,7 +14,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Config from "./config";
-import { useLocalStorage } from "usehooks-ts";
+import useLocalStorage from "use-local-storage";
 import { v4 as uuidv4 } from 'uuid';
 
 export type MessageDict = {
@@ -48,6 +48,7 @@ function App() {
     },
   };
 
+  const [showCode, setShowCode] = useLocalStorage<boolean>("showCode", false);
   const [MODELS, setModels] = useState<{displayName: string, name: string}[]>([]);
 
   useEffect(() => {
@@ -202,7 +203,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
       const data = await response.json();
       const code = data.code;
 
-      addMessage({ text: data.text, type: "message", role: "generator" });
+      addMessage({ text: data.text, type: "message_generated", role: "generator" });
 
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);
@@ -394,13 +395,11 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
             <Settings
               models={MODELS}
               selectedModel={selectedModel}
-              onSelectModel={(val: string) => {
-                setSelectedModel(val);
-              }}
+              onSelectModel={setSelectedModel}
               toggledOptions={toggledOptions}
-              onToggledOptions={(val: string[]) => {
-                setToggledOptions(val);
-              }}
+              onToggledOptions={setToggledOptions}
+              showCode={showCode}
+              onShowCode={setShowCode}
             />
         </Stack>
         <div className="main">
@@ -408,6 +407,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
             chatScrollRef={chatScrollRef}
             waitingForSystem={waitingForSystem}
             messages={messages}
+            showCode={showCode}
           />
           <Input
             Messages={messages}

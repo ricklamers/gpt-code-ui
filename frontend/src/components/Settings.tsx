@@ -10,6 +10,8 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import CheckIcon from "@mui/icons-material/Check";
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
 
 
 export default function Settings(props: {
@@ -18,6 +20,8 @@ export default function Settings(props: {
   onSelectModel: (val: string) => void;
   toggledOptions: string[];
   onToggledOptions: (val: string[]) => void;
+  showCode: boolean;
+  onShowCode: (val: boolean) => void;
 }) {
   const options: Array<{ name: string; displayName: string }> = [
     {name: 'svg', displayName: 'Vector Graphics'},
@@ -42,6 +46,15 @@ export default function Settings(props: {
           <Stack direction="column" spacing={0}>
             <label className="header">Settings</label>
             <Stack direction="column" spacing={1}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={props.showCode}
+                  onChange={(_ev, checked) => {props.onShowCode(checked)} }
+                  inputProps={{ 'aria-label': 'controlled' }}
+                />}
+              label="Show Python Code"
+            />
             <FormControl fullWidth className="setting">
               <InputLabel id="options-select-label">Options</InputLabel>
               <Select

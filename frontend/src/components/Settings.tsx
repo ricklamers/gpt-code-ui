@@ -10,6 +10,10 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import CheckIcon from "@mui/icons-material/Check";
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
+import FormGroup from '@mui/material/FormGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Tooltip from '@mui/material/Tooltip';
 
 
 export default function Settings(props: {
@@ -18,6 +22,10 @@ export default function Settings(props: {
   onSelectModel: (val: string) => void;
   toggledOptions: string[];
   onToggledOptions: (val: string[]) => void;
+  showCode: boolean;
+  onShowCode: (val: boolean) => void;
+  autoFix: number;
+  onAutoFix: (val: number) => void;
 }) {
   const options: Array<{ name: string; displayName: string }> = [
     {name: 'svg', displayName: 'Vector Graphics'},
@@ -42,6 +50,28 @@ export default function Settings(props: {
           <Stack direction="column" spacing={0}>
             <label className="header">Settings</label>
             <Stack direction="column" spacing={1}>
+            <FormGroup>
+              <FormControlLabel
+                control={
+                  <Tooltip title="Show the code that is being generated and executed and all error message that potentially result from that.">
+                    <Switch
+                      checked={props.showCode}
+                      onChange={(_ev, checked) => {props.onShowCode(checked)} }
+                    />
+                  </Tooltip>}
+                label="Show Python Code"
+              />
+              <FormControlLabel
+                control={
+                  <Tooltip title="Try to fix runtime errors by automatically modifying the generated code.">
+                    <Switch
+                      checked={props.autoFix > 0}
+                      onChange={(_ev, checked) => {props.onAutoFix(checked ? 3 : 0)} }
+                    />
+                  </Tooltip>}
+                label="Autofix Execution Errors"
+              />
+            </FormGroup>
             <FormControl fullWidth className="setting">
               <InputLabel id="options-select-label">Options</InputLabel>
               <Select

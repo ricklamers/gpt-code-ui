@@ -166,12 +166,14 @@ function Message(props: {
   text: string;
   role: string;
   type: string;
-  showLoader?: boolean;
+  showCode: boolean;
 }) {
   const ICONS = {
     "upload": <FileUploadIcon />,
     "generator": <VoiceChatIcon />,
+    "documentation": <VoiceChatIcon />,
     "system": <TerminalIcon />,
+    "system_hide": <TerminalIcon />,
     "user": <PersonIcon />,
   };
 
@@ -190,18 +192,22 @@ function Message(props: {
 
   const Message_Type = Message_Types[props.type as keyof typeof Message_Types] || Message_Generic;
 
-  return (
-    <div className={"message " + props.role}>
-      <div className="avatar-holder">
-        <div className="avatar">
-          { ICONS[props.role as keyof typeof ICONS] }
+  if (!props.showCode && (props.role === "generator" || props.role === "system_hide")) {
+    return <></>;
+  } else {
+    return (
+      <div className={"message " + props.role}>
+        <div className="avatar-holder">
+          <div className="avatar">
+            { ICONS[props.role as keyof typeof ICONS] }
+          </div>
+        </div>
+        <div className="message-body">
+          <Message_Type text={props.text} />
         </div>
       </div>
-      <div className="message-body">
-        <Message_Type text={props.text} />
-      </div>
-    </div>
-  );
+    );
+  }
 }
 
 
@@ -209,6 +215,7 @@ export enum WaitingStates {
   SessionTimeout = "Session timeout. Please reload the page.",
   WaitingForKernel = "Waiting for kernel connection",
   GeneratingCode = "Generating code",
+  FixingCode = "Fixing code",
   RunningCode = "Running code",
   UploadingFile = "Uploading file",
   Idle = "Ready",
@@ -218,6 +225,7 @@ export default function Chat(props: {
   waitingForSystem: WaitingStates;
   chatScrollRef: RefObject<HTMLDivElement>;
   messages: Array<MessageDict>;
+  showCode: boolean;
 }) {
   return (
     <div className="chat-messages" ref={props.chatScrollRef}>
@@ -228,6 +236,7 @@ export default function Chat(props: {
             text={message.text}
             role={message.role}
             type={message.type}
+            showCode={props.showCode}
           />
         );
       })}
@@ -236,7 +245,7 @@ export default function Chat(props: {
           text={props.waitingForSystem}
           role="system"
           type="message_loader"
-          showLoader={true}
+          showCode={false}
         />
       ) : null}
     </div>

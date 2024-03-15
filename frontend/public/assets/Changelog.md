@@ -1,5 +1,9 @@
 # Changelog #
 
+## March 15, 2024 ##
+* Added option to hide the generated code
+* Added option to attempt automatically fixing runtime errors
+
 ## March 06, 2024 ##
 * Added this changelog to the documentation section
 * Produced graphs and images are resizable now via a handle at their lower right corner

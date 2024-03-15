@@ -38,6 +38,7 @@ function getIcon(state: WaitingStates) {
                 },
               }}/>;
         case WaitingStates.GeneratingCode:
+        case WaitingStates.FixingCode:
             return <TerminalIcon color="primary" sx={{
                 animation: "bounce-in-right 2s ease infinite",
                 "@keyframes bounce-in-right": {

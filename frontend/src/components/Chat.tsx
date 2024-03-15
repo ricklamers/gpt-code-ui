@@ -171,7 +171,9 @@ function Message(props: {
   const ICONS = {
     "upload": <FileUploadIcon />,
     "generator": <VoiceChatIcon />,
+    "documentation": <VoiceChatIcon />,
     "system": <TerminalIcon />,
+    "system_hide": <TerminalIcon />,
     "user": <PersonIcon />,
   };
 
@@ -186,12 +188,11 @@ function Message(props: {
     "message_status": Message_HTML,
     "message_loader": Message_Loader,
     "message": Message_Generic,
-    "message_generated": Message_Generic,
   };
 
   const Message_Type = Message_Types[props.type as keyof typeof Message_Types] || Message_Generic;
 
-  if (!props.showCode && (props.type === "message_generated")) {
+  if (!props.showCode && (props.role === "generator" || props.role === "system_hide")) {
     return <></>;
   } else {
     return (
@@ -214,6 +215,7 @@ export enum WaitingStates {
   SessionTimeout = "Session timeout. Please reload the page.",
   WaitingForKernel = "Waiting for kernel connection",
   GeneratingCode = "Generating code",
+  FixingCode = "Fixing code",
   RunningCode = "Running code",
   UploadingFile = "Uploading file",
   Idle = "Ready",

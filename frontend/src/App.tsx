@@ -49,6 +49,8 @@ function App() {
   };
 
   const [showCode, setShowCode] = useLocalStorage<boolean>("showCode", false);
+  const [autoFix, setAutoFix] = useLocalStorage<number>("autoFix", 0);
+  const [autoFixCountdown, setAutoFixCountdown] = useState(autoFix);
   const [MODELS, setModels] = useState<{displayName: string, name: string}[]>([]);
 
   useEffect(() => {
@@ -102,7 +104,7 @@ function App() {
     {
       text: `Hello! I am a GPT Code assistant. Ask me to do something for you!
 Pro tip: you can upload a file and I'll be able to use it.`,
-      role: "generator",
+      role: "documentation",
       type: "message",
     },
     {
@@ -110,7 +112,7 @@ Pro tip: you can upload a file and I'll be able to use it.`,
 For interrupting a running program, please type <kbd>stop<kbd>⮐</kbd></kbd>.
 In case you want to clear the conversation history, just type <kbd>clear<kbd>⮐</kbd></kbd>.
 Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&darr;</kbd></kbd> to recall previous prompts.`,
-      role: "generator",
+      role: "documentation",
       type: "message",
     },
   ]);
@@ -175,21 +177,21 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
       .catch((error) => console.error("Error:", error));
   };
 
-  const sendMessage = async (userInput: string) => {
-    try {
-      if(userInput.toLowerCase() in COMMANDS) {
-        handleCommand(COMMANDS[userInput.toLowerCase() as keyof typeof COMMANDS])
-        return;
-      }
-
-      if (userInput.length == 0) {
-        return;
-      }
-
-      addMessage({ text: userInput, type: "message", role: "user" });
+  const handleUserInput = async (userInput: string) => {
+    if(userInput.toLowerCase() in COMMANDS) {
+      handleCommand(COMMANDS[userInput.toLowerCase() as keyof typeof COMMANDS])
+    } else if (userInput.length > 0) {
+      setAutoFixCountdown(autoFix);
+      sendMessage(userInput, 'user');
       setWaitingForSystem(WaitingStates.GeneratingCode);
+    }
+  }
 
-      const response = await fetch(`${Config.WEB_ADDRESS}/generate`, {
+  const sendMessage = async (userInput: string, role: string) => {
+      addMessage({ text: userInput, type: 'message', role: role });
+
+      try {
+        const response = await fetch(`${Config.WEB_ADDRESS}/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -203,7 +205,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
       const data = await response.json();
       const code = data.code;
 
-      addMessage({ text: data.text, type: "message_generated", role: "generator" });
+      addMessage({ text: data.text, type: "message", role: "generator" });
 
       if (response.status != 200) {
         setWaitingForSystem(WaitingStates.Idle);
@@ -279,18 +281,22 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
         } else {
           const data = await response.json();
 
-          if (data.status === "starting") {
-            setWaitingForSystem(WaitingStates.WaitingForKernel);
-          } else if (data.status === "ready") {
-            setWaitingForSystem(WaitingStates.Idle);
-          } else if (data.status === "idle") {
-            setWaitingForSystem(WaitingStates.Idle);
-          } else if (data.status === "generating") {
-            setWaitingForSystem(WaitingStates.GeneratingCode);
-          } else if (data.status === "busy") {
-            setWaitingForSystem(WaitingStates.RunningCode);
-          } else {
-            setWaitingForSystem(WaitingStates.WaitingForKernel);
+          switch (data.status) {
+            case "starting":
+              setWaitingForSystem(WaitingStates.WaitingForKernel);
+              break;
+            case "ready":
+            case "idle":
+              setWaitingForSystem(WaitingStates.Idle);
+              break;
+            case "generating":
+              setWaitingForSystem(WaitingStates.GeneratingCode);
+              break;
+            case "busy":
+              setWaitingForSystem(WaitingStates.RunningCode);
+              break;
+            default:
+              setWaitingForSystem(WaitingStates.WaitingForKernel);
           }
 
           data.results.forEach(function (result: {value: string, type: string}) {
@@ -300,6 +306,30 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
 
             addMessage({ text: result.value, type: result.type, role: "system" });
           });
+
+          if ((data.results.at(-1)?.type == 'message_error') && (autoFix > 0)) {
+            // we got a runtime error. Mark all previous results as potentially incomplete
+            setMessages((state: MessageDict[]) =>
+             {
+              for (let step = state.length - 1; step > 0; step--) {
+                if (state[step].role != 'system') {
+                  // this is likely the latest user prompt or generator output - do not go further back
+                  break;
+                } else {
+                  state[step].role = 'system_hide';
+                }
+              }
+              return state;
+            });
+
+            if (autoFixCountdown > 0) {
+              setAutoFixCountdown(autoFixCountdown - 1);
+              setWaitingForSystem(WaitingStates.FixingCode);
+              await sendMessage('Please fix the error.', 'generator');
+            } else {
+              addMessage({ text: `Automatic fixing of execution errors failed after ${autoFix} attempts. Please check your input.`, type: 'message', role: 'system' })
+            }
+          }
         }
       } catch (error) {
         if (error instanceof(TypeError)) {
@@ -314,7 +344,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
 
     const interval = setInterval(getApiData, 1000);
     return () => clearInterval(interval);
-  }, [otherTabDetected, waitingForSystem, setWaitingForSystem]);
+  }, [autoFix, autoFixCountdown, otherTabDetected]);
 
   React.useEffect(() => {
     // Scroll down container by setting scrollTop to the height of the container
@@ -400,6 +430,8 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
               onToggledOptions={setToggledOptions}
               showCode={showCode}
               onShowCode={setShowCode}
+              autoFix={autoFix}
+              onAutoFix={setAutoFix}
             />
         </Stack>
         <div className="main">
@@ -411,7 +443,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
           />
           <Input
             Messages={messages}
-            onSendMessage={sendMessage}
+            onSendMessage={handleUserInput}
             onCompletedUpload={completeUpload}
             onStartUpload={startUpload}
             onSelectFoundryFolder={setFoundryFolder}

@@ -5,7 +5,7 @@ import Documentation from "./components/Documentation";
 import Kernel from "./components/Kernel";
 import Settings from "./components/Settings";
 import Chat, { WaitingStates } from "./components/Chat";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -16,6 +16,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Config from "./config";
 import useLocalStorage from "use-local-storage";
 import { v4 as uuidv4 } from 'uuid';
+import PrintIcon from '@mui/icons-material/Print';
+import { useReactToPrint } from 'react-to-print';
 
 export type MessageDict = {
   text: string;
@@ -143,7 +145,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
 
   const [messages, setMessages] = useState<MessageDict[]>(DEFAULT_MESSAGES);
   const [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
-  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const submitCode = async (code: string) => {
     fetch(`${Config.API_ADDRESS}/api`, {
@@ -380,6 +382,10 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
     };
   }, []);
 
+  const handlePrint = useReactToPrint({
+    content: () => chatScrollRef.current,
+  });
+
   return (
     <>
       <div className="app">
@@ -422,6 +428,16 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
               onInterruptKernel={() => { handleCommand(COMMANDS["stop"]); }}
               onResetKernel={() => { handleCommand(COMMANDS["reset"]); }}
             />
+            <Stack direction="column" spacing={0}>
+              <label className="header">Chat Export</label>
+              <Stack direction="column" spacing={1}>
+                <Button
+                  endIcon={<PrintIcon color="primary" />}
+                  style={{justifyContent: "flex-end"}}
+                  onClick={handlePrint}
+                >Print</Button>
+              </Stack>
+            </Stack>
             <Settings
               models={MODELS}
               selectedModel={selectedModel}

@@ -1,8 +1,9 @@
 # Changelog #
 
-## March 15, 2024 ##
+## March 18, 2024 ##
 * Added option to hide the generated code
 * Added option to attempt automatically fixing runtime errors
+* Added a button for printing the chat history. This should also allow for conveninet pdf export through your browser's print dialog.
 
 ## March 06, 2024 ##
 * Added this changelog to the documentation section

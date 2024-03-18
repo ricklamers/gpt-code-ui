@@ -228,6 +228,13 @@ def models():
     return jsonify(AVAILABLE_MODELS)
 
 
+@app.route("/sessions")
+def sessions():
+    resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/sessions")
+
+    return resp.content, resp.status_code, resp.headers.items()
+
+
 @app.route("/assets/<path:path>")
 def serve_static(path):
     return send_from_directory("static/assets/", path)

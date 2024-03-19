@@ -65,7 +65,7 @@ In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
   "DEBUG": 1,
   "OPENAI_API_LOGLEVEL": "debug",
 
-  "FOUNDRY_DATA_FOLDER": "/Group Functions/mgf-use-case-gpt-code-ui/data"
+  "FOUNDRY_DATA_FOLDER": "/Global/Foundry Training and Resources/Example Data/Aviation Ontology"
 }
 
 ```
@@ -94,7 +94,7 @@ SESSION_ENCRYPTION_KEY="<SECRET_KEY>"
 DEBUG=1
 NO_INTERNET_AVAILABLE=0
 OPENAI_API_LOGLEVEL=debug
-FOUNDRY_DATA_FOLDER=/Path/To/Folder/data
+FOUNDRY_DATA_FOLDER=/Global/Foundry Training and Resources/Example Data/Aviation Ontology
 ```
 Then call
 ```

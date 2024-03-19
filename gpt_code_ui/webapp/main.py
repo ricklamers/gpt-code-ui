@@ -28,7 +28,9 @@ load_dotenv(".env")
 AVAILABLE_MODELS = llm.get_available_models()
 SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
-FOUNDRY_DATA_FOLDER = os.getenv("FOUNDRY_DATA_FOLDER", "/Group Functions/mgf-use-case-gpt-code-ui/data")
+FOUNDRY_DATA_FOLDER = os.getenv(
+    "FOUNDRY_DATA_FOLDER", "/Global/Foundry Training and Resources/Example Data/Aviation Ontology"
+)
 
 
 class ChatHistory:

@@ -72,33 +72,6 @@ function App() {
   const [selectedModel, setSelectedModel] = useLocalStorage<string>("model", "gpt-3.5-turbo");
   const [toggledOptions, setToggledOptions] = useLocalStorage<string[]>("options", ['svg', ]);
 
-  const [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
-  const [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
-
-  const getAvailableFoundryDatasets = async (folder: string | undefined) => {
-    try {
-      const params = folder != undefined ? new URLSearchParams({folder: folder}) : '';
-      const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files?${params}`);
-
-      if (response.ok) {
-        const json = await response.json();
-        if (folder == undefined) {
-          setFoundryFolder(json.folder);
-        }
-        setFoundryAvailableDatasets(json.datasets);
-      } else {
-        setFoundryAvailableDatasets(undefined);
-      }
-    } catch (e) {
-      console.error(e);
-      setFoundryAvailableDatasets(undefined);
-    }
-  };
-
-  useEffect(() => {
-    getAvailableFoundryDatasets(foundryFolder);
-  }, [foundryFolder]);
-
   const DEFAULT_MESSAGES = Array.from([
     {
       text: `Hello! I am a GPT Code assistant. Ask me to do something for you!
@@ -234,7 +207,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
     setWaitingForSystem(WaitingStates.UploadingFile);
   }
 
-  async function selectFoundryDataset(dataset_rid: string) {
+  async function downloadFoundryDataset(dataset_rid: string) {
     if (dataset_rid != '') {
       try {
         setWaitingForSystem(WaitingStates.UploadingFile);
@@ -253,7 +226,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
         } else {
           const msg = await response.text();
           addMessage({ text: `Downloading dataset <a href="https://palantir.mcloud.merckgroup.com/workspace/hubble/exploration?objectId=${dataset_rid}" target="_blank">${dataset_rid}</a> failed with status code ${response.status}: ${msg}.
-Likely, you only have Discoverer role but need at least Reader role in the <a href="https://palantir.mcloud.merckgroup.com/workspace/compass/view/${foundryFolder}" target="_blank">specified folder</a>.`, type: "message", role: "upload" });
+Possibly, you only have Discoverer role but need at least Reader role on the item.`, type: "message", role: "upload" });
           console.log(response);
         }
       } catch (e) {
@@ -459,10 +432,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
             onSendMessage={handleUserInput}
             onCompletedUpload={completeUpload}
             onStartUpload={startUpload}
-            onSelectFoundryFolder={setFoundryFolder}
-            foundryFolder={foundryFolder}
-            foundryAvailableDatasets={foundryAvailableDatasets}
-            onSelectFoundryDataset={selectFoundryDataset}
+            onSelectFoundryDataset={downloadFoundryDataset}
           />
         </div>
       </div>

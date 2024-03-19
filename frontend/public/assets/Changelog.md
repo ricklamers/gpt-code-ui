@@ -3,6 +3,7 @@
 * Also store selected options to recall them when re-opening the web page
 * Ensure there is always a default Foundry folder selected
 * Set default Foundry folder to `/Global/Foundry Training and Resources/Example Data/Aviation Ontology` as this should be readable by everybody
+* Added support for folder navigationi n Foundry dialog
 
 ## March 18, 2024 ##
 * Added option to hide the generated code

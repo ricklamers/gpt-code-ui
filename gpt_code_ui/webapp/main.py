@@ -8,6 +8,7 @@ import sys
 import uuid
 from collections import defaultdict
 from functools import wraps
+from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
@@ -388,6 +389,7 @@ def foundry_files(session_id, logger, folder=None):
         try:
             files = fc.download_dataset_files(dataset_rid, workdir)
         except requests.exceptions.HTTPError as e:
+            logger.exception(e)
             return e.response.json().get("errorCode", "Unknown Error"), e.response.status_code
 
         results = []
@@ -422,11 +424,21 @@ def foundry_files(session_id, logger, folder=None):
                 folder_rid, folder = folder, fc.get_dataset_path(folder)
 
             files = fc.get_child_objects_of_folder(folder_rid)
+
+            parent_folder = str(Path(folder).parent)
+            parent_rid = fc.get_dataset_rid(parent_folder)
+
             return jsonify(
                 {
-                    "folder": folder,
-                    "folder_rid": folder_rid,
-                    "datasets": [{"name": f["name"], "dataset_rid": f["rid"]} for f in files],
+                    "self": {"name": str(Path(folder).name), "absolute_path": folder, "rid": folder_rid},
+                    "parent": {
+                        "name": str(Path(parent_folder).name),
+                        "absolute_path": parent_folder,
+                        "rid": parent_rid,
+                    },
+                    "children": [
+                        {"name": f["name"], "absolute_path": f'{folder}/{f["name"]}', "rid": f["rid"]} for f in files
+                    ],
                 }
             )
         except FoundryAPIError:

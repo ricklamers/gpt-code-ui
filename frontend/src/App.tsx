@@ -69,26 +69,23 @@ function App() {
     getModels();
  }, []);
 
-  const [selectedModel, setSelectedModel] = useLocalStorage<string>(
-    "model",
-    "gpt-3.5-turbo"
-  );
-
-  const [toggledOptions, setToggledOptions] = React.useState<string[]>(['svg', ]);
+  const [selectedModel, setSelectedModel] = useLocalStorage<string>("model", "gpt-3.5-turbo");
+  const [toggledOptions, setToggledOptions] = useLocalStorage<string[]>("options", ['svg', ]);
 
   const [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
   const [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
 
   const getAvailableFoundryDatasets = async (folder: string | undefined) => {
     try {
-      if (folder != undefined) {
-        const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files?` + new URLSearchParams({folder: folder}));
-        if (response.ok) {
-          const json = await response.json();
-          setFoundryAvailableDatasets(json.datasets);
-        } else {
-          setFoundryAvailableDatasets(undefined);
+      const params = folder != undefined ? new URLSearchParams({folder: folder}) : '';
+      const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files?${params}`);
+
+      if (response.ok) {
+        const json = await response.json();
+        if (folder == undefined) {
+          setFoundryFolder(json.folder);
         }
+        setFoundryAvailableDatasets(json.datasets);
       } else {
         setFoundryAvailableDatasets(undefined);
       }

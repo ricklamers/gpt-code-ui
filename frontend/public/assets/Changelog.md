@@ -1,4 +1,7 @@
 # Changelog #
+## March 19, 2024 ##
+* Also store selected options to recall them when re-opening the web page
+* Ensure there is always a default Foundry folder selected
 
 ## March 18, 2024 ##
 * Added option to hide the generated code

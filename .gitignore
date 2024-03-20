@@ -4,6 +4,7 @@
 
 # Program related
 process_pids/
+kernel.*
 kernel_connection_file.json
 
 # Python stuff
@@ -20,3 +21,6 @@ __pycache__/
 
 dist/
 build/
+.app_service_config.json
+.DS_Store
+.ipynb_checkpoints

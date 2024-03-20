@@ -1,11 +1,3 @@
-div.message.generator {
-    background: rgba(247,247,248);
-}
-
-div.message.system {
-    background: rgba(247,247,248);
-}
-
 div.avatar {
     background: rgb(194, 142, 210);
     padding: 5px;
@@ -54,6 +46,24 @@ div.message-body {
     width: 100%;
 }
 
+kbd {
+    font-weight: bold;
+}
+
+kbd > kbd {
+    border-radius: 3px;
+    padding: 1px 2px 0;
+    border: 1px solid;
+}
+
+.message-body td, th {
+    border-left: 2vw solid transparent;
+}
+
+.message-body tr>td:first-child {
+     border: 0px;
+}
+
 .loader {
     border: 5px solid #74a89b;
     border-radius: 50%;
@@ -72,4 +82,3 @@ div.message-body {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-

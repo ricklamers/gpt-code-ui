@@ -1,32 +1,34 @@
-import { useRef, useState } from "react";
+import { useRef, useState, KeyboardEvent, MouseEvent, ChangeEvent } from "react";
 
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import SendIcon from "@mui/icons-material/Send";
 import TextareaAutosize from "react-textarea-autosize";
 import Config from "../config";
+import Foundry from "./Foundry";
 import "./Input.css";
+import { MessageDict } from "../App"
 
-export default function Input(props: { onSendMessage: any, onStartUpload: any, onCompletedUpload: any }) {
 
-  let fileInputRef = useRef<HTMLInputElement>(null);
-  let [inputIsFocused, setInputIsFocused] = useState<boolean>(false);
-  let [userInput, setUserInput] = useState<string>("");
+export default function Input(props: {
+  Messages: MessageDict[],
+  onSendMessage: (msg: string) => void,
+  onStartUpload: (filename: string) => void,
+  onCompletedUpload: (msg: string) => void,
+  onSelectFoundryDataset: (name: string) => void; }
+) {
 
-  const handleInputFocus = () => {
-    setInputIsFocused(true);
-  };
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [inputIsFocused, setInputIsFocused] = useState<boolean>(false);
+  const [userInput, setUserInput] = useState<string>('');
+  const [messageReplay, setMessageReplay] = useState(0);
 
-  const handleInputBlur = () => {
-    setInputIsFocused(false);
-  };
-
-  const handleUpload = (e: any) => {
+  const handleUpload = (e: MouseEvent) => {
     e.preventDefault();
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: any) => {
-    if (e.target.files.length > 0) {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files != null && e.target.files.length > 0) {
       const file = e.target.files[0];
 
       // Create a new FormData instance
@@ -55,27 +57,53 @@ export default function Input(props: { onSendMessage: any, onStartUpload: any, o
       }
     }
   };
-  
+
 
   const handleSendMessage = async () => {
+    setMessageReplay(0);
     props.onSendMessage(userInput);
     setUserInput("");
   }
 
-  const handleInputChange = (e: any) => {
-    setUserInput(e.target.value);
-  };
+  const handleArrow = async (dir: number) => {
+    let newMessage = messageReplay;
+    while (newMessage + dir < 1 && newMessage + dir > -props.Messages.length) {
+      newMessage = newMessage + dir;
+      if (newMessage === 0) {
+        setUserInput("");
+        setMessageReplay(newMessage);
+        break;
+      } else if (props.Messages[props.Messages.length + newMessage].role === 'user') {
+        setUserInput(props.Messages[props.Messages.length + newMessage].text);
+        setMessageReplay(newMessage);
+        break;
+      }
+    }
+  }
 
-  const handleKeyDown = (e: any) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Enter" && e.shiftKey === false) {
-        e.preventDefault();
-        handleSendMessage();
+      e.preventDefault();
+      handleSendMessage();
+    } else if (e.key === 'ArrowUp' && e.altKey === true) {
+      e.preventDefault();
+      handleArrow(-1);
+    } else if (e.key === 'ArrowDown' && e.altKey === true) {
+      e.preventDefault();
+      handleArrow(1);
     }
   };
 
   return (
     <div className="input-parent">
       <div className={"input-holder " + (inputIsFocused ? "focused" : "")}>
+
+        <form className="file-open">
+          <Foundry
+            onSelectFoundryDataset = { props.onSelectFoundryDataset }
+          />
+        </form>
+
         <form className="file-upload">
           <input
             onChange={handleFileChange}
@@ -87,18 +115,21 @@ export default function Input(props: { onSendMessage: any, onStartUpload: any, o
             <FileUploadIcon />
           </button>
         </form>
+
         <TextareaAutosize
-          onFocus={handleInputFocus}
-          onBlur={handleInputBlur}
-          onChange={handleInputChange}
+          onFocus={ () => setInputIsFocused(true) }
+          onBlur={ () => setInputIsFocused(false) }
+          onChange={ (e) => setUserInput(e.target.value) }
           onKeyDown={handleKeyDown}
           value={userInput}
           rows={1}
           placeholder="Send a message"
         />
+
         <button className="send" onClick={handleSendMessage}>
           <SendIcon />
         </button>
+
       </div>
     </div>
   );

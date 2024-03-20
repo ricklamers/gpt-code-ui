@@ -17,3 +17,7 @@
   overflow: hidden;
   height: 100vh;
 }
+
+.sidebar {
+  background-color: rgb(185, 205, 215);
+}

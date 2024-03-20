@@ -1,64 +1,122 @@
 # The GPT web UI as a template based Flask app
-import os
-import requests
 import asyncio
 import json
-import re
 import logging
+import os
+import re
 import sys
-import openai
+import uuid
+from collections import defaultdict
+from functools import wraps
+from pathlib import Path
+from typing import Dict, List
+
 import pandas as pd
-
-from collections import deque
-
-from flask_cors import CORS
-from flask import Flask, request, jsonify, send_from_directory, Response
+import pandas.api.types as pd_types
+import requests
 from dotenv import load_dotenv
+from flask import Flask, Response, jsonify, request, send_from_directory, session
+from flask_cors import CORS
+from foundry_dev_tools import FoundryRestClient
+from foundry_dev_tools.foundry_api_client import FoundryAPIError
 
-from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
+from gpt_code_ui.kernel_program import config
+from gpt_code_ui.webapp import llm
+from gpt_code_ui.webapp.prompts import get_system_prompt
 
-load_dotenv('.env')
+load_dotenv(".env")
 
-openai.api_version = os.environ.get("OPENAI_API_VERSION")
-openai.log = os.getenv("OPENAI_API_LOGLEVEL")
-OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
-
-if openai.api_type == "open_ai":
-    AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))
-elif openai.api_type == "azure":
-    try:
-        AVAILABLE_MODELS = json.loads(os.environ["AZURE_OPENAI_DEPLOYMENTS"])
-    except KeyError as e:
-        raise RuntimeError('AZURE_OPENAI_DEPLOYMENTS environment variable not set') from e
-else:
-    raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
-
-UPLOAD_FOLDER = 'workspace/'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
+AVAILABLE_MODELS = llm.get_available_models()
+SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
+FOUNDRY_DATA_FOLDER = os.getenv(
+    "FOUNDRY_DATA_FOLDER", "/Global/Foundry Training and Resources/Example Data/Aviation Ontology"
+)
 
 
-class LimitedLengthString:
-    def __init__(self, maxlen=2000):
-        self.data = deque()
-        self.len = 0
-        self.maxlen = maxlen
+class ChatHistory:
+    def __init__(self, system_prompt: str = None):
+        self._buffer: List[Dict[str, str]] = list()
+        self._last_untruncated = None
+        self._truncation_maxlines = 20
 
-    def append(self, string):
-        self.data.append(string)
-        self.len += len(string)
-        while self.len > self.maxlen:
-            popped = self.data.popleft()
-            self.len -= len(popped)
+        if system_prompt is None:
+            system_prompt = get_system_prompt()
 
-    def get_string(self):
-        result = ''.join(self.data)
-        return result[-self.maxlen:]
+        self._append("system", system_prompt)
+
+    def _append(self, role: str, content: str, name: str = None):
+        if role not in ("user", "assistant", "system"):
+            raise ValueError(f"Invalid role: {role}")
+
+        entry = {"role": role, "content": content}
+        if name is not None:
+            entry["name"] = name
+
+        self._buffer.append(entry)
+
+    def _extend_or_append(self, role: str, prefix: str, content: str, name: str = None) -> bool:
+        """Returns true if a new entry has been created (i.e. append instead of extend)"""
+        last = self._buffer[-1]
+        if last["role"] == role and last.get("name", None) == name:
+            last["content"] += content
+            return False
+        else:
+            self._append(role, f"{prefix}\n{content}", name)
+            return True
+
+    def _truncate(self, s: str) -> str:
+        return "\n".join(s.splitlines()[: self._truncation_maxlines])
+
+    def _update_truncation(self):
+        if self._last_untruncated is not None:
+            self._buffer[self._last_untruncated]["content"] = self._truncate(
+                self._buffer[self._last_untruncated]["content"]
+            )
+        self._last_untruncated = len(self._buffer) - 1
+
+    def add_prompt(self, prompt: str):
+        self._append("user", prompt, "User")
+
+    def add_answer(self, answer: str):
+        self._append("assistant", answer)
+
+    def upload_file(self, filename: str, file_info: str = None):
+        self._append(
+            "user",
+            f"In the following, I will refer to the file {filename}.\n{file_info}",
+        )
+
+    def add_execution_result(self, result: str):
+        if self._extend_or_append(
+            "user",
+            "These are the first lines of the output generated when executing the code:",
+            result,
+            "Computer",
+        ):
+            self._update_truncation()
+
+    def add_error(self, message: str):
+        if self._extend_or_append(
+            "user",
+            "Executing this code lead to an error.\nThe first lines of the error message read:",
+            message,
+            "Computer",
+        ):
+            self._update_truncation()
+
+    def __call__(self, exclude_system: bool = False, override_system_prompt: str = None):
+        if exclude_system:
+            return [entry for entry in self._buffer if entry["role"] != "system"]
+        elif override_system_prompt is not None:
+            buffer = [entry for entry in self._buffer if entry["role"] != "system"]
+            buffer.insert(0, {"role": "system", "content": override_system_prompt})
+            return buffer
+        else:
+            return self._buffer
 
 
-message_buffer = LimitedLengthString()
+chat_history: Dict[str, ChatHistory] = defaultdict(ChatHistory)
 
 
 def allowed_file(filename):
@@ -66,134 +124,106 @@ def allowed_file(filename):
 
 
 def inspect_file(filename: str) -> str:
+    NUM_SAMPLE_ROWS = 5
     READER_MAP = {
-        '.csv': pd.read_csv,
-        '.tsv': pd.read_csv,
-        '.xlsx': pd.read_excel,
-        '.xls': pd.read_excel,
-        '.xml': pd.read_xml,
-        '.json': pd.read_json,
-        '.hdf': pd.read_hdf,
-        '.hdf5': pd.read_hdf,
-        '.feather': pd.read_feather,
-        '.parquet': pd.read_parquet,
-        '.pkl': pd.read_pickle,
-        '.sql': pd.read_sql,
+        ".csv": pd.read_csv,
+        ".tsv": pd.read_csv,
+        ".xlsx": pd.read_excel,
+        ".xls": pd.read_excel,
+        ".xml": pd.read_xml,
+        ".json": pd.read_json,
+        ".hdf": pd.read_hdf,
+        ".hdf5": pd.read_hdf,
+        ".feather": pd.read_feather,
+        ".parquet": pd.read_parquet,
+        ".pkl": pd.read_pickle,
+        ".sql": pd.read_sql,
     }
+
+    def _convert_type(t):
+        if pd_types.is_string_dtype(t):
+            return "string"
+        elif pd_types.is_integer_dtype(t):
+            return "integer"
+        elif pd_types.is_float_dtype(t):
+            return "float"
+        else:
+            return t
 
     _, ext = os.path.splitext(filename)
 
     try:
-        df = READER_MAP[ext.lower()](filename)
-        return f'The file contains the following columns: {", ".join(df.columns)}'
+        df: pd.DataFrame = READER_MAP[ext.lower()](filename)
+        column_table = "| Column Name | Column Type |\n| ----------- | ----------- |\n" + "\n".join(
+            [f"| {n} | {_convert_type(t)} |" for n, t in df.dtypes.items()]
+        )
+        return f"""The file contains the following columns:
+{column_table}
+
+The table has {len(df.index)} rows. The first {NUM_SAMPLE_ROWS} rows read
+{df.head(NUM_SAMPLE_ROWS).to_markdown()}
+"""
     except KeyError:
-        return ''  # unsupported file type
+        return ""  # unsupported file type
     except Exception:
-        return ''  # file reading failed. - Don't want to know why.
+        return ""  # file reading failed. - Don't want to know why.
 
 
-async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
-
-    prompt = f"""First, here is a history of what I asked you to do earlier. 
-    The actual prompt follows after ENDOFHISTORY. 
-    History:
-    {message_buffer.get_string()}
-    ENDOFHISTORY.
-    Write Python code, in a triple backtick Markdown code block, that does the following:
-    {user_prompt}
-    
-    Notes: 
-        First, think step by step what you want to do and write it down in English.
-        Then generate valid Python code in a code block 
-        Make sure all code is valid - it be run in a Jupyter Python 3 kernel environment. 
-        Define every variable before you use it.
-        For data munging, you can use 
-            'numpy', # numpy==1.24.3
-            'dateparser' #dateparser==1.1.8
-            'pandas', # matplotlib==1.5.3
-            'geopandas' # geopandas==0.13.2
-        For pdf extraction, you can use
-            'PyPDF2', # PyPDF2==3.0.1
-            'pdfminer', # pdfminer==20191125
-            'pdfplumber', # pdfplumber==0.9.0
-        For data visualization, you can use
-            'matplotlib', # matplotlib==3.7.1
-        Be sure to generate charts with matplotlib. If you need geographical charts, use geopandas with the geopandas.datasets module.
-        If the user has just uploaded a file, focus on the file that was most recently uploaded (and optionally all previously uploaded files)
-    
-    Teacher mode: if the code modifies or produces a file, at the end of the code block insert a print statement that prints a link to it as HTML string: <a href='/download?file=INSERT_FILENAME_HERE'>Download file</a>. Replace INSERT_FILENAME_HERE with the actual filename."""
-
-    if user_openai_key:
-        openai.api_key = user_openai_key
-
-    arguments = dict(
-        temperature=0.7,
-        headers=OPENAI_EXTRA_HEADERS,
-        messages=[
-            # {"role": "system", "content": system},
-            {"role": "user", "content": prompt},
-        ]
-    )
-
-    if openai.api_type == 'open_ai':
-        arguments["model"] = model
-    elif openai.api_type == 'azure':
-        arguments["deployment_id"] = model
+async def get_code(messages, model="openai/gpt-3.5-turbo"):
+    try:
+        content = llm.call(messages, model=model)
+    except RuntimeError as e:
+        return None, str(e), 500
     else:
-        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
 
-    try:
-        result_GPT = openai.ChatCompletion.create(**arguments)
+        def extract_code(text):
+            # Match triple backtick blocks first
+            triple_match = re.search(
+                r"```(?:(?:[^\r\n]*[pP]ython[^\r\n]*[\r\n])|(?:\w+\n))?(.+?)```",
+                text,
+                re.DOTALL,
+            )
+            if triple_match:
+                return triple_match.group(1).strip()
+            else:
+                # If no triple backtick blocks, match single backtick blocks
+                single_match = re.search(r"`(.+?)`", text, re.DOTALL)
+                if single_match:
+                    return single_match.group(1).strip()
 
-        if 'error' in result_GPT:
-            raise openai.APIError(code=result_GPT.error.code, message=result_GPT.error.message)
+        return extract_code(content), content.strip(), 200
 
-        if result_GPT.choices[0].finish_reason == 'content_filter':
-            raise openai.APIError('Content Filter')
-
-    except openai.OpenAIError as e:
-        return None, f"Error from API: {e}", 500
-
-    try:
-        content = result_GPT.choices[0].message.content
-
-    except AttributeError:
-        return None, f"Malformed answer from API: {content}", 500
-
-    def extract_code(text):
-        # Match triple backtick blocks first
-        triple_match = re.search(r'```(?:\w+\n)?(.+?)```', text, re.DOTALL)
-        if triple_match:
-            return triple_match.group(1).strip()
-        else:
-            # If no triple backtick blocks, match single backtick blocks
-            single_match = re.search(r'`(.+?)`', text, re.DOTALL)
-            if single_match:
-                return single_match.group(1).strip()
-
-    return extract_code(content), content.strip(), 200
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
-log = logging.getLogger('werkzeug')
+log = logging.getLogger("werkzeug")
 log.setLevel(logging.ERROR)
 
-cli = sys.modules['flask.cli']
-cli.show_server_banner = lambda *x: None
+cli = sys.modules["flask.cli"]
+cli.show_server_banner = lambda *x: None  # type: ignore
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.secret_key = SESSION_ENCRYPTION_KEY
 
 CORS(app)
 
 
-@app.route('/')
+def session_id_required(function_to_protect):
+    @wraps(function_to_protect)
+    def wrapper(*args, **kwargs):
+        if (session_id := session.get("session_id", None)) is None:
+            session_id = str(uuid.uuid4())
+            session["session_id"] = session_id
+
+        logger = config.get_logger(f"WebApp {session_id}")
+
+        return function_to_protect(session_id, logger, *args, **kwargs)
+
+    return wrapper
+
+
+@app.route("/")
 def index():
-
-    # Check if index.html exists in the static folder
-    if not os.path.exists(os.path.join(app.root_path, 'static/index.html')):
-        print("index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?")
-
-    return send_from_directory('static', 'index.html')
+    return send_from_directory("static", "index.html")
 
 
 @app.route("/models")
@@ -201,85 +231,225 @@ def models():
     return jsonify(AVAILABLE_MODELS)
 
 
-@app.route('/api/<path:path>', methods=["GET", "POST"])
-def proxy_kernel_manager(path):
-    if request.method == "POST":
-        resp = requests.post(
-            f'http://localhost:{KERNEL_APP_PORT}/{path}', json=request.get_json())
-    else:
-        resp = requests.get(f'http://localhost:{KERNEL_APP_PORT}/{path}')
+@app.route("/sessions")
+def sessions():
+    resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/sessions")
 
-    excluded_headers = ['content-encoding',
-                        'content-length', 'transfer-encoding', 'connection']
-    headers = [(name, value) for (name, value) in resp.raw.headers.items()
-               if name.lower() not in excluded_headers]
-
-    response = Response(resp.content, resp.status_code, headers)
-    return response
+    return resp.content, resp.status_code, resp.headers.items()
 
 
-@app.route('/assets/<path:path>')
+@app.route("/assets/<path:path>")
 def serve_static(path):
-    return send_from_directory('static/assets/', path)
+    return send_from_directory("static/assets/", path)
 
 
-@app.route('/download')
-def download_file():
+@app.route("/api/<path:path>", methods=["GET", "POST"])
+@session_id_required
+def proxy_kernel_manager(session_id, logger, path):
+    backend_url = f"http://localhost:{config.KERNEL_APP_PORT}/{path}/{session_id}"
 
+    try:
+        if request.method == "POST":
+            resp = requests.post(backend_url, json=request.get_json())
+        else:
+            resp = requests.get(backend_url)
+    except requests.exceptions.ConnectionError as e:
+        return jsonify({"message": f"Failed to communicate with backend server: {e}."}), 500
+
+    # store execution results in conversation history to allow back-references by the user
+    content = json.loads(resp.content)
+    for res in content.get("results", []):
+        if res["type"] == "message":
+            chat_history[session_id].add_execution_result(res["value"])
+        elif res["type"] == "message_error":
+            chat_history[session_id].add_error(res["value"])
+
+        logger.debug(session_id, res)
+
+    excluded_headers = [
+        "content-encoding",
+        "content-length",
+        "transfer-encoding",
+        "connection",
+    ]
+    headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
+
+    # inject the conversation history into the results
+    content["chat_history"] = chat_history[session_id](exclude_system=True)
+
+    return Response(json.dumps(content), resp.status_code, headers)
+
+
+@app.route("/download")
+@session_id_required
+def download_file(session_id, logger):
     # Get query argument file
-    file = request.args.get('file')
-    # from `workspace/` send the file
-    # make sure to set required headers to make it download the file
-    return send_from_directory(os.path.join(os.getcwd(), 'workspace'), file, as_attachment=True)
+    file = request.args.get("file")
+    # find out the workspace directory corresponding to the specific session
+    resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/workdir/{session_id}")
+    if resp.status_code == 200:
+        workdir = resp.json()["result"]
+    else:
+        return resp, resp.status_code
+
+    logger.info(f"Downloading '{file}' from  '{workdir}'.")
+    return send_from_directory(workdir, file, as_attachment=True)
 
 
-@app.route('/inject-context', methods=['POST'])
-def inject_context():
-    user_prompt = request.json.get('prompt', '')
-
-    # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
-
+@app.route("/clear_history", methods=["POST"])
+@session_id_required
+def clear_history(session_id, logger):
+    logger.info("Clearing chat history")
+    del chat_history[session_id]
     return jsonify({"result": "success"})
 
 
-@app.route('/generate', methods=['POST'])
-def generate_code():
-    user_prompt = request.json.get('prompt', '')
-    user_openai_key = request.json.get('openAIKey', None)
-    model = request.json.get('model', None)
+@app.route("/generate", methods=["POST"])
+@session_id_required
+def generate_code(session_id, logger):
+    requests.post(
+        f"http://localhost:{config.KERNEL_APP_PORT}/status/{session_id}",
+        json={"status": "generating"},
+    )
+
+    user_prompt = request.json.get("prompt", "")
+    model = request.json.get("model", None)
+
+    logger.info(f"Code generation reuqested with model '{model}'. Prompt:\n{user_prompt}")
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-    code, text, status = loop.run_until_complete(
-        get_code(user_prompt, user_openai_key, model))
+    chat_history[session_id].add_prompt(user_prompt)
+
+    code, text, status = loop.run_until_complete(get_code(chat_history[session_id](), model))
     loop.close()
 
-    # Append all messages to the message buffer for later use
-    message_buffer.append(user_prompt + "\n\n")
+    if status == 200:
+        chat_history[session_id].add_answer(text)
 
-    return jsonify({'code': code, 'text': text}), status
+    requests.post(
+        f"http://localhost:{config.KERNEL_APP_PORT}/status/{session_id}",
+        json={"status": "ready"},
+    )
+
+    logger.info(f"\n== Answer ==\n{text}\n\n== Extracted Code ==\n {code}")
+    return jsonify({"code": code, "text": text}), status
 
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
+@app.route("/upload", methods=["POST"])
+@session_id_required
+def upload_file(session_id, logger):
     # check if the post request has the file part
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part in the request'}), 400
-    file = request.files['file']
-    # if user does not select file, browser also
-    # submit an empty part without filename
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+    file = request.files["file"]
+    # if user does not select file, browser also submit an empty part without filename
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
     if file and allowed_file(file.filename):
-        file_target = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        # find out the workspace directory corresponding to the specific session
+        resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/workdir/{session_id}")
+        if resp.status_code == 200:
+            workdir = resp.json()["result"]
+        else:
+            return resp, resp.status_code
+
+        logger.info(f"Uploading file '{file.filename}' to '{workdir}'")
+
+        file_target = os.path.join(workdir, file.filename)
         file.save(file_target)
         file_info = inspect_file(file_target)
-        return jsonify({'message': f'File {file.filename} uploaded successfully.\n{file_info}'}), 200
+        chat_history[session_id].upload_file(file.filename, file_info)
+        return jsonify({"message": f"File `{file.filename}` uploaded successfully.\n{file_info}"}), 200
     else:
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({"message": "File type not supported."}), 400
 
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)
+@app.route("/foundry_files", methods=["GET", "POST"])
+@session_id_required
+def foundry_files(session_id, logger, folder=None):
+    try:
+        fc = FoundryRestClient()
+    except ValueError as e:
+        logger.exception(e)
+        return "Foundry access misconfigured on server", 500
+
+    if request.method == "POST":
+        req = request.get_json()
+        dataset_rid = req["dataset_rid"]
+
+        # find out the workspace directory corresponding to the specific session
+        resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/workdir/{session_id}")
+        if resp.status_code == 200:
+            workdir = resp.json()["result"]
+        else:
+            return resp, resp.status_code
+
+        try:
+            files = fc.download_dataset_files(dataset_rid, workdir)
+        except requests.exceptions.HTTPError as e:
+            logger.exception(e)
+            return e.response.json().get("errorCode", "Unknown Error"), e.response.status_code
+
+        results = []
+        http_code = 400
+        for file in files:
+            filename = os.path.relpath(file, workdir)
+
+            if allowed_file(file):
+                file_info = inspect_file(file)
+                chat_history[session_id].upload_file(filename, file_info)
+
+                results.append(
+                    {
+                        "filename": filename,
+                        "message": f"File `{filename}` downloaded successfully.\n{file_info}",
+                    }
+                )
+                http_code = 200
+            else:
+                results.append({"filename": filename, "message": "File type not supported."})
+
+        return jsonify(results), http_code
+    else:
+        folder = request.args.get("folder", FOUNDRY_DATA_FOLDER)
+
+        try:
+            if folder.startswith("/"):
+                # this is a path - query the RID
+                folder_rid = fc.get_dataset_rid(folder)
+            else:
+                # this must be an RID - query the path
+                folder_rid, folder = folder, fc.get_dataset_path(folder)
+
+            files = fc.get_child_objects_of_folder(folder_rid)
+
+            parent_folder = str(Path(folder).parent)
+            parent_rid = fc.get_dataset_rid(parent_folder)
+
+            return jsonify(
+                {
+                    "self": {"name": str(Path(folder).name), "absolute_path": folder, "rid": folder_rid},
+                    "parent": {
+                        "name": str(Path(parent_folder).name),
+                        "absolute_path": parent_folder,
+                        "rid": parent_rid,
+                    },
+                    "children": [
+                        {"name": f["name"], "absolute_path": f'{folder}/{f["name"]}', "rid": f["rid"]} for f in files
+                    ],
+                }
+            )
+        except FoundryAPIError:
+            return "Folder not accessible", 404
+
+
+if __name__ == "__main__":
+    # Check if index.html exists in the static folder
+    if not os.path.exists(os.path.join(app.root_path, "static/index.html")):
+        raise RuntimeError(
+            "index.html not found in static folder. Exiting. Did you forget to run `make compile_frontend` before installing the local package?"
+        )
+    else:
+        app.run(host="0.0.0.0", port=APP_PORT, debug=True, use_reloader=False)

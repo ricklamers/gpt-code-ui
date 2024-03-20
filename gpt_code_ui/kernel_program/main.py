@@ -1,160 +1,132 @@
-import os
-import subprocess
-import sys
-import pathlib
-import json
+import atexit
 import logging
-import time
+import sys
+from datetime import datetime, timedelta
+from functools import wraps
 
-import asyncio
-import json
-import threading
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 
-from queue import Queue
+from gpt_code_ui.kernel_program import config  # noqa: E402
+from gpt_code_ui.kernel_program.kernel import Kernel, StoppableThread  # noqa: E402
+from gpt_code_ui.kernel_program.kernel_manager import KernelManager  # noqa: E402
 
-from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import the CORS library
-
-from dotenv import load_dotenv
-load_dotenv('.env')
-
-import gpt_code_ui.kernel_program.kernel_manager as kernel_manager
-import gpt_code_ui.kernel_program.config as config
-import gpt_code_ui.kernel_program.utils as utils
+kernel_manager = KernelManager()
 
 
-APP_PORT = int(os.environ.get("API_PORT", 5010))
+class WatchdogThread(StoppableThread):
+    def __init__(self, kernel_manager, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._logger = config.get_logger("Watchdog Thread")
+        self._kernel_manager = kernel_manager
 
-# Get global logger
-logger = config.get_logger()
+    def run(self):
+        while not self.stopped(timeout=config.WATCHDOG_INTERVAL_S):
+            km = self._kernel_manager
+            timeout_limit = datetime.now() - timedelta(seconds=config.KERNEL_TIMEOUT_S)
 
-# Note, only one kernel_manager_process can be active
-kernel_manager_process = None
+            self._logger.info(f"Purging kernels accessed before {timeout_limit}")
+            expired_sessions = []
+            for session_id, kernel in km.items():
+                if hasattr(kernel, "last_access") and kernel.last_access < timeout_limit:
+                    self._logger.info(
+                        f"Kernel for session {session_id} expired, last access: {kernel.last_access} which was more than {config.KERNEL_TIMEOUT_S}s ago."
+                    )
+                    expired_sessions.append(session_id)
 
-# Use efficient Python queues to store messages
-result_queue = Queue()
-send_queue = Queue()
+            km.purge_kernels(expired_sessions)
 
-messaging = None
 
 # We know this Flask app is for local use. So we can disable the verbose Werkzeug logger
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
-cli = sys.modules['flask.cli']
-cli.show_server_banner = lambda *x: None
+cli = sys.modules["flask.cli"]
+cli.show_server_banner = lambda *x: None  # type: ignore
 
 app = Flask(__name__)
 CORS(app)
 
-def start_kernel_manager():
-    global kernel_manager_process
 
-    kernel_manager_script_path = os.path.join(
-        pathlib.Path(__file__).parent.resolve(), "kernel_manager.py"
-    )
-    kernel_manager_process = subprocess.Popen(
-        [sys.executable, kernel_manager_script_path]
-    )
+def kernel_specific(func):
+    @wraps(func)
+    def wrapper(session_id, *args, **kwargs):
+        kernel = kernel_manager.get(session_id)
+        kernel.last_access = datetime.now()
+        return func(kernel, *args, **kwargs)
 
-    # Write PID as <pid>.pid to config.KERNEL_PID_DIR
-    os.makedirs(config.KERNEL_PID_DIR, exist_ok=True)
-    with open(os.path.join(config.KERNEL_PID_DIR, "%d.pid" % kernel_manager_process.pid), "w") as p:
-        p.write("kernel_manager")
-
-def cleanup_kernel_program():
-    kernel_manager.cleanup_spawned_processes()
-
-async def start_snakemq():
-    global messaging
-
-    messaging, link = utils.init_snakemq(config.IDENT_MAIN)
-
-    def on_recv(conn, ident, message):
-        message = json.loads(message.data.decode("utf-8"))
-
-        if message["type"] == "status":
-            if message["value"] == "ready":
-                logger.debug("Kernel is ready.")
-                result_queue.put({
-                    "value":"Kernel is ready.",
-                    "type": "message"
-                })
-
-        elif message["type"] in ["message", "message_raw", "image/png", "image/jpeg"]:
-            # TODO: 1:1 kernel <> channel mapping
-            logger.debug("%s of type %s" % (message["value"], message["type"]))
-
-            result_queue.put({
-                "value": message["value"],
-                "type": message["type"]
-            })
-
-    messaging.on_message_recv.add(on_recv)
-    logger.info("Starting snakemq loop")
-
-    def send_queued_messages():
-        while True:
-            if send_queue.qsize() > 0:
-                message = send_queue.get()
-                utils.send_json(messaging, 
-                    {"type": "execute", "value": message["command"]}, 
-                    config.IDENT_KERNEL_MANAGER
-                )
-            time.sleep(0.1)
-
-    async def async_send_queued_messages():
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, send_queued_messages)
-
-    async def async_link_loop():
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, link.loop)
-
-    # Wrap the snakemq_link.Link loop in an asyncio task
-    await asyncio.gather(async_send_queued_messages(), async_link_loop())
+    return wrapper
 
 
-@app.route("/api", methods=["POST", "GET"])
-def handle_request():
-   
+@app.route("/api/<session_id>", methods=["POST", "GET"])
+@kernel_specific
+def handle_request(kernel: Kernel):
     if request.method == "GET":
-        # Handle GET requests by sending everything that's in the receive_queue
-        results = [result_queue.get() for _ in range(result_queue.qsize())]
-        return jsonify({"results": results})
+        # Handle GET requests by sending everything that is in the receive_queue
+        return jsonify({"results": kernel.get_results(), "status": kernel.status})
     elif request.method == "POST":
-        data = request.json
-
-        send_queue.put(data)
-
-        return jsonify({"result": "success"})
-    
-@app.route("/restart", methods=["POST"])
-def handle_restart():
-
-    cleanup_kernel_program()
-    start_kernel_manager()
-
-    return jsonify({"result": "success"})
+        kernel.execute(request.json)
+        return jsonify({"result": "success", "status": kernel.status})
 
 
-async def main():
-    start_kernel_manager()
+@app.route("/status/<session_id>", methods=["POST", "GET"])
+@kernel_specific
+def handle_status(kernel: Kernel):
+    if request.method == "POST":
+        kernel.set_status(request.json["status"])
 
-    # Run Flask app in a separate thread
-    flask_thread = threading.Thread(target=run_flask_app)
-    flask_thread.start()
-
-    # Run in background
-    await start_snakemq()
+    return jsonify({"result": "success", "status": kernel.status})
 
 
-def run_flask_app():
-    app.run(host="0.0.0.0", port=APP_PORT)
+@app.route("/restart/<session_id>", methods=["POST"])
+@kernel_specific
+def handle_restart(kernel: Kernel):
+    kernel.restart()
+    return jsonify({"result": "success", "status": kernel.status})
+
+
+@app.route("/interrupt/<session_id>", methods=["POST"])
+@kernel_specific
+def handle_interrupt(kernel: Kernel):
+    kernel.interrupt()
+    return jsonify({"result": "success", "status": kernel.status})
+
+
+@app.route("/workdir/<session_id>", methods=["GET"])
+@kernel_specific
+def handle_workdir(kernel: Kernel):
+    return jsonify({"result": str(kernel.workdir)})
+
+
+@app.route("/sessions", methods=["GET"])
+def list_sessions():
+    result = [
+        {
+            "id": num,
+            "last_access": str(getattr(kernel, "last_access", 0)),
+            # do NOT hand out the session ids
+        }
+        for num, (session_id, kernel) in enumerate(kernel_manager.items())
+    ]
+
+    return jsonify({"result": result})
+
+
+def main():
+    # Monitor last access to kernels, remove all that have not been accessed in a while
+    watchdog_thread = WatchdogThread(
+        name="Kernel Manager Watchdog Thread",
+        kernel_manager=kernel_manager,
+    )
+
+    watchdog_thread.start()
+    atexit.register(lambda: cleanup(watchdog_thread))
+    app.run(host="0.0.0.0", port=config.KERNEL_APP_PORT)
+
+
+def cleanup(watchdog_thread):
+    watchdog_thread.stop(wait=True)
+    kernel_manager.terminate()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
-
-
-
-    
+    main()

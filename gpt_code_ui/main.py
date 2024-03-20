@@ -2,107 +2,95 @@
 
 # webapp is a Flask app (in webapp/main.py relative to this main.py)
 # kernel_program is a Python script (in kernel_program/main.py relative to this main.py)
-
+import multiprocessing
+import multiprocessing.connection
 import sys
-import logging
-import asyncio
 import time
 import webbrowser
 
-from multiprocessing import Process
-
-from gpt_code_ui.webapp.main import app, APP_PORT
-from gpt_code_ui.kernel_program.main import main as kernel_program_main, cleanup_kernel_program
+import gpt_code_ui.kernel_program.config as config
+from gpt_code_ui.kernel_program.main import main as kernel_program_main
+from gpt_code_ui.webapp.main import APP_PORT, app
 
 APP_URL = "http://localhost:%s" % APP_PORT
 
-def run_webapp():
+
+def run_webapp(logger):
     try:
         app.run(host="0.0.0.0", port=APP_PORT, use_reloader=False)
-    except Exception as e:
-        logging.exception("Error running the webapp:")
+    except Exception:
+        logger.exception("Error running the webapp")
         sys.exit(1)
 
-def run_kernel_program():
+
+def run_kernel_program(logger):
     try:
-        asyncio.run(kernel_program_main())
-    except Exception as e:
-        logging.exception("Error running the kernel_program:")
+        kernel_program_main()
+    except Exception:
+        logger.exception("Error running the kernel_program")
         sys.exit(1)
 
-def setup_logging():
-    log_format = "%(asctime)s [%(levelname)s]: %(message)s"
-    logging.basicConfig(level=logging.INFO, format=log_format)
-    log_filename = "app.log"
-    file_handler = logging.FileHandler(log_filename)
-    file_handler.setFormatter(logging.Formatter(log_format))
-    logging.getLogger().addHandler(file_handler)
 
-def print_color(text, color="gray"):
-    # Default to gray
-    code="242"
-
-    if color == "green":
-        code="35"
-    
-    gray_code = "\033[38;5;%sm" % code
-    reset_code = "\033[0m"
-    print(f"{gray_code}{text}{reset_code}")
+def start_subprocess(name, proc, logger):
+    process = multiprocessing.Process(target=proc, name=name, args=[logger])
+    process.start()
+    return process
 
 
-def print_banner():
-        
-        print("""
+def print_banner(logger):
+    logger.info(
+        """
 █▀▀ █▀█ ▀█▀ ▄▄ █▀▀ █▀█ █▀▄ █▀▀
 █▄█ █▀▀ ░█░ ░░ █▄▄ █▄█ █▄▀ ██▄
-        """)
+    """
+    )
+    logger.info("> Open GPT-Code UI in your browser %s" % APP_URL)
+    logger.info("You can inspect detailed logs in app.log.")
+    logger.info("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")
 
-        print("> Open GPT-Code UI in your browser %s" % APP_URL)
-        print("")
-        print("You can inspect detailed logs in app.log.")
-        print("")
-        print("Find your OpenAI API key at https://platform.openai.com/account/api-keys")
-        print("")
-        print_color("Contribute to GPT-Code UI at https://github.com/ricklamers/gpt-code-ui")   
 
 def main():
-    setup_logging()
+    logger = config.get_logger("GPT Code UI")
 
-    webapp_process = Process(target=run_webapp)
-    kernel_program_process = Process(target=run_kernel_program)
+    SUBPROCESSES = {
+        "WebApp": run_webapp,
+        "Kernel API": run_kernel_program,
+    }
 
     try:
-        webapp_process.start()
-        kernel_program_process.start()
+        subprocesses = {name: start_subprocess(name, proc, logger) for name, proc in SUBPROCESSES.items()}
 
         # Poll until the webapp is running
         while True:
             try:
                 app.test_client().get("/")
                 break
-            except:
+            except Exception:
                 time.sleep(0.1)
-        
-        print_banner()    
-        
+
+        print_banner(logger)
+
         webbrowser.open(APP_URL)
 
-        webapp_process.join()
-        kernel_program_process.join()
+        while True:
+            multiprocessing.connection.wait(process.sentinel for process in subprocesses.values())
 
-        
+            for name in list(subprocesses.keys()):
+                if (exitcode := subprocesses[name].exitcode) is not None:
+                    logger.info(f"{name} process terminated with exit code {exitcode}. Restarting.")
+                    subprocesses[name] = start_subprocess(name, SUBPROCESSES[name], logger)
+
     except KeyboardInterrupt:
-        print("Terminating processes...")
-        
-        cleanup_kernel_program()
-        kernel_program_process.terminate()
+        logger.info("Terminating processes...")
 
-        webapp_process.terminate()
+        for process in subprocesses.values():
+            process.terminate()
 
-        webapp_process.join()
-        kernel_program_process.join()
+        for process in subprocesses.values():
+            process.join()
 
-        print("Processes terminated.")
-        
-if __name__ == '__main__':
+        logger.info("Processes terminated.")
+
+
+if __name__ == "__main__":
     main()

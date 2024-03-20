@@ -5,7 +5,7 @@ import Documentation from "./components/Documentation";
 import Kernel from "./components/Kernel";
 import Settings from "./components/Settings";
 import Chat, { WaitingStates } from "./components/Chat";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -16,6 +16,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Config from "./config";
 import useLocalStorage from "use-local-storage";
 import { v4 as uuidv4 } from 'uuid';
+import PrintIcon from '@mui/icons-material/Print';
+import { useReactToPrint } from 'react-to-print';
 
 export type MessageDict = {
   text: string;
@@ -67,38 +69,8 @@ function App() {
     getModels();
  }, []);
 
-  const [selectedModel, setSelectedModel] = useLocalStorage<string>(
-    "model",
-    "gpt-3.5-turbo"
-  );
-
-  const [toggledOptions, setToggledOptions] = React.useState<string[]>(['svg', ]);
-
-  const [foundryFolder, setFoundryFolder] = useLocalStorage<string | undefined>('foundryFolder', undefined)
-  const [foundryAvailableDatasets, setFoundryAvailableDatasets] = useState<{ name: string; dataset_rid: string; }[] | undefined>(undefined)
-
-  const getAvailableFoundryDatasets = async (folder: string | undefined) => {
-    try {
-      if (folder != undefined) {
-        const response = await fetch(`${Config.WEB_ADDRESS}/foundry_files?` + new URLSearchParams({folder: folder}));
-        if (response.ok) {
-          const json = await response.json();
-          setFoundryAvailableDatasets(json.datasets);
-        } else {
-          setFoundryAvailableDatasets(undefined);
-        }
-      } else {
-        setFoundryAvailableDatasets(undefined);
-      }
-    } catch (e) {
-      console.error(e);
-      setFoundryAvailableDatasets(undefined);
-    }
-  };
-
-  useEffect(() => {
-    getAvailableFoundryDatasets(foundryFolder);
-  }, [foundryFolder]);
+  const [selectedModel, setSelectedModel] = useLocalStorage<string>("model", "gpt-3.5-turbo");
+  const [toggledOptions, setToggledOptions] = useLocalStorage<string[]>("options", ['svg', ]);
 
   const DEFAULT_MESSAGES = Array.from([
     {
@@ -143,7 +115,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
 
   const [messages, setMessages] = useState<MessageDict[]>(DEFAULT_MESSAGES);
   const [waitingForSystem, setWaitingForSystem] = useState<WaitingStates>(WaitingStates.Idle);
-  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const submitCode = async (code: string) => {
     fetch(`${Config.API_ADDRESS}/api`, {
@@ -235,7 +207,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
     setWaitingForSystem(WaitingStates.UploadingFile);
   }
 
-  async function selectFoundryDataset(dataset_rid: string) {
+  async function downloadFoundryDataset(dataset_rid: string) {
     if (dataset_rid != '') {
       try {
         setWaitingForSystem(WaitingStates.UploadingFile);
@@ -254,7 +226,7 @@ Use <kbd><kbd>Alt</kbd>+<kbd>&uarr;</kbd></kbd> and <kbd><kbd>Alt</kbd>+<kbd>&da
         } else {
           const msg = await response.text();
           addMessage({ text: `Downloading dataset <a href="https://YOUR_FOUNDRY_SERVER/workspace/hubble/exploration?objectId=${dataset_rid}" target="_blank">${dataset_rid}</a> failed with status code ${response.status}: ${msg}.
-Likely, you only have Discoverer role but need at least Reader role in the <a href="https://YOUR_FOUNDRY_SERVER/workspace/compass/view/${foundryFolder}" target="_blank">specified folder</a>.`, type: "message", role: "upload" });
+Possibly, you only have Discoverer role but need at least Reader role on the item.`, type: "message", role: "upload" });
           console.log(response);
         }
       } catch (e) {
@@ -380,6 +352,10 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
     };
   }, []);
 
+  const handlePrint = useReactToPrint({
+    content: () => chatScrollRef.current,
+  });
+
   return (
     <>
       <div className="app">
@@ -422,6 +398,16 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
               onInterruptKernel={() => { handleCommand(COMMANDS["stop"]); }}
               onResetKernel={() => { handleCommand(COMMANDS["reset"]); }}
             />
+            <Stack direction="column" spacing={0}>
+              <label className="header">Chat Export</label>
+              <Stack direction="column" spacing={1}>
+                <Button
+                  endIcon={<PrintIcon color="primary" />}
+                  style={{justifyContent: "flex-end"}}
+                  onClick={handlePrint}
+                >Print</Button>
+              </Stack>
+            </Stack>
             <Settings
               models={MODELS}
               selectedModel={selectedModel}
@@ -446,10 +432,7 @@ Likely, you only have Discoverer role but need at least Reader role in the <a hr
             onSendMessage={handleUserInput}
             onCompletedUpload={completeUpload}
             onStartUpload={startUpload}
-            onSelectFoundryFolder={setFoundryFolder}
-            foundryFolder={foundryFolder}
-            foundryAvailableDatasets={foundryAvailableDatasets}
-            onSelectFoundryDataset={selectFoundryDataset}
+            onSelectFoundryDataset={downloadFoundryDataset}
           />
         </div>
       </div>

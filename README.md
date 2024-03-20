@@ -65,7 +65,7 @@ In order to run properly, your `APP_SERVICE_CONFIG` should read similar to
   "DEBUG": 1,
   "OPENAI_API_LOGLEVEL": "debug",
 
-  "FOUNDRY_DATA_FOLDER": "<YOUR FOUNDRY DATA FOLDER>"
+  "FOUNDRY_DATA_FOLDER": "/Global/Foundry Training and Resources/Example Data/Aviation Ontology"
 }
 
 ```
@@ -90,8 +90,9 @@ WEB_PORT=8080
 SESSION_ENCRYPTION_KEY="<SECRET_KEY>"
 
 DEBUG=1
-
-FOUNDRY_DATA_FOLDER="<YOUR FOUNDRY DATA FOLDER>"
+NO_INTERNET_AVAILABLE=0
+OPENAI_API_LOGLEVEL=debug
+FOUNDRY_DATA_FOLDER=/Global/Foundry Training and Resources/Example Data/Aviation Ontology
 ```
 Then call
 ```

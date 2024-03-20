@@ -8,6 +8,7 @@ import sys
 import uuid
 from collections import defaultdict
 from functools import wraps
+from pathlib import Path
 from typing import Dict, List
 
 import pandas as pd
@@ -28,7 +29,9 @@ load_dotenv(".env")
 AVAILABLE_MODELS = llm.get_available_models()
 SESSION_ENCRYPTION_KEY = os.environ["SESSION_ENCRYPTION_KEY"]
 APP_PORT = int(os.environ.get("WEB_PORT", 8080))
-FOUNDRY_DATA_FOLDER = os.getenv("FOUNDRY_DATA_FOLDER", "/YOUR/FOUNDRY/FOLDER")
+FOUNDRY_DATA_FOLDER = os.getenv(
+    "FOUNDRY_DATA_FOLDER", "/Global/Foundry Training and Resources/Example Data/Aviation Ontology"
+)
 
 
 class ChatHistory:
@@ -228,6 +231,13 @@ def models():
     return jsonify(AVAILABLE_MODELS)
 
 
+@app.route("/sessions")
+def sessions():
+    resp = requests.get(f"http://localhost:{config.KERNEL_APP_PORT}/sessions")
+
+    return resp.content, resp.status_code, resp.headers.items()
+
+
 @app.route("/assets/<path:path>")
 def serve_static(path):
     return send_from_directory("static/assets/", path)
@@ -379,6 +389,7 @@ def foundry_files(session_id, logger, folder=None):
         try:
             files = fc.download_dataset_files(dataset_rid, workdir)
         except requests.exceptions.HTTPError as e:
+            logger.exception(e)
             return e.response.json().get("errorCode", "Unknown Error"), e.response.status_code
 
         results = []
@@ -413,11 +424,21 @@ def foundry_files(session_id, logger, folder=None):
                 folder_rid, folder = folder, fc.get_dataset_path(folder)
 
             files = fc.get_child_objects_of_folder(folder_rid)
+
+            parent_folder = str(Path(folder).parent)
+            parent_rid = fc.get_dataset_rid(parent_folder)
+
             return jsonify(
                 {
-                    "folder": folder,
-                    "folder_rid": folder_rid,
-                    "datasets": [{"name": f["name"], "dataset_rid": f["rid"]} for f in files],
+                    "self": {"name": str(Path(folder).name), "absolute_path": folder, "rid": folder_rid},
+                    "parent": {
+                        "name": str(Path(parent_folder).name),
+                        "absolute_path": parent_folder,
+                        "rid": parent_rid,
+                    },
+                    "children": [
+                        {"name": f["name"], "absolute_path": f'{folder}/{f["name"]}', "rid": f["rid"]} for f in files
+                    ],
                 }
             )
         except FoundryAPIError:

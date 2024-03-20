@@ -97,6 +97,20 @@ def handle_workdir(kernel: Kernel):
     return jsonify({"result": str(kernel.workdir)})
 
 
+@app.route("/sessions", methods=["GET"])
+def list_sessions():
+    result = [
+        {
+            "id": num,
+            "last_access": str(getattr(kernel, "last_access", 0)),
+            # do NOT hand out the session ids
+        }
+        for num, (session_id, kernel) in enumerate(kernel_manager.items())
+    ]
+
+    return jsonify({"result": result})
+
+
 def main():
     # Monitor last access to kernels, remove all that have not been accessed in a while
     watchdog_thread = WatchdogThread(

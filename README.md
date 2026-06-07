@@ -50,6 +50,11 @@ You can use the `.env.example` in the repository (make sure you `git clone` the 
 For Azure OpenAI Services, there are also other configurable variables like deployment name. See `.env.azure-example` for more information.
 Note that model selection on the UI is currently not supported for Azure OpenAI Services.
 
+### Using MiniMax AI
+[MiniMax](https://www.minimaxi.com/) models (M3, M2.7, M2.7-highspeed) are supported via the OpenAI-compatible API. Set `OPENAI_API_TYPE=minimax` and provide your `MINIMAX_API_KEY`. See `.env.minimax-example` for a complete configuration template. The default model is `MiniMax-M3` (512K context, up to 128K output, supports image input).
+
+MiniMax can also be auto-detected: if `MINIMAX_API_KEY` is set and `OPENAI_API_KEY` is not, MiniMax is used automatically.
+
 ```
 cp .env.example .env
 vim .env

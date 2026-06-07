@@ -19,19 +19,44 @@ from gpt_code_ui.kernel_program.main import APP_PORT as KERNEL_APP_PORT
 
 load_dotenv('.env')
 
+# Detect provider type: supports "open_ai", "azure", and "minimax"
+# MiniMax can be selected via OPENAI_API_TYPE=minimax or auto-detected
+# when MINIMAX_API_KEY is set without OPENAI_API_KEY.
+PROVIDER = os.environ.get("OPENAI_API_TYPE", "").strip()
+if not PROVIDER:
+    if os.environ.get("MINIMAX_API_KEY") and not os.environ.get("OPENAI_API_KEY"):
+        PROVIDER = "minimax"
+    else:
+        PROVIDER = openai.api_type or "open_ai"
+
+if PROVIDER == "minimax":
+    # MiniMax uses an OpenAI-compatible API, so we configure the openai
+    # library to point at the MiniMax endpoint.
+    openai.api_type = "open_ai"
+    openai.api_base = os.environ.get(
+        "OPENAI_API_BASE",
+        "https://api.minimax.io/v1"
+    )
+    openai.api_key = os.environ.get(
+        "MINIMAX_API_KEY",
+        os.environ.get("OPENAI_API_KEY")
+    )
+
 openai.api_version = os.environ.get("OPENAI_API_VERSION")
 openai.log = os.getenv("OPENAI_API_LOGLEVEL")
 OPENAI_EXTRA_HEADERS = json.loads(os.environ.get("OPENAI_EXTRA_HEADERS", "{}"))
 
-if openai.api_type == "open_ai":
+if PROVIDER == "open_ai":
     AVAILABLE_MODELS = json.loads(os.environ.get("OPENAI_MODELS", '''[{"displayName": "GPT-3.5", "name": "gpt-3.5-turbo"}, {"displayName": "GPT-4", "name": "gpt-4"}]'''))
-elif openai.api_type == "azure":
+elif PROVIDER == "azure":
     try:
         AVAILABLE_MODELS = json.loads(os.environ["AZURE_OPENAI_DEPLOYMENTS"])
     except KeyError as e:
         raise RuntimeError('AZURE_OPENAI_DEPLOYMENTS environment variable not set') from e
+elif PROVIDER == "minimax":
+    AVAILABLE_MODELS = json.loads(os.environ.get("MINIMAX_MODELS", '''[{"displayName": "MiniMax-M3", "name": "MiniMax-M3"}, {"displayName": "MiniMax-M2.7", "name": "MiniMax-M2.7"}, {"displayName": "MiniMax-M2.7-highspeed", "name": "MiniMax-M2.7-highspeed"}]'''))
 else:
-    raise ValueError(f'Invalid OPENAI_API_TYPE: {openai.api_type}')
+    raise ValueError(f'Invalid OPENAI_API_TYPE: {PROVIDER}')
 
 UPLOAD_FOLDER = 'workspace/'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -126,8 +151,13 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
     if user_openai_key:
         openai.api_key = user_openai_key
 
+    temperature = 0.7
+    # MiniMax requires temperature in range (0, 1].
+    if PROVIDER == "minimax":
+        temperature = max(0.01, min(temperature, 1.0))
+
     arguments = dict(
-        temperature=0.7,
+        temperature=temperature,
         headers=OPENAI_EXTRA_HEADERS,
         messages=[
             # {"role": "system", "content": system},
@@ -135,12 +165,12 @@ async def get_code(user_prompt, user_openai_key=None, model="gpt-3.5-turbo"):
         ]
     )
 
-    if openai.api_type == 'open_ai':
+    if PROVIDER in ('open_ai', 'minimax'):
         arguments["model"] = model
-    elif openai.api_type == 'azure':
+    elif PROVIDER == 'azure':
         arguments["deployment_id"] = model
     else:
-        return None, f"Error: Invalid OPENAI_PROVIDER: {openai.api_type}", 500
+        return None, f"Error: Invalid OPENAI_PROVIDER: {PROVIDER}", 500
 
     try:
         result_GPT = openai.ChatCompletion.create(**arguments)
